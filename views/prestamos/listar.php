@@ -1,0 +1,1 @@
+<?php include '../../includes/auth.php'; echo '<h3>Listado de préstamos (a desarrollar)</h3>'; ?>

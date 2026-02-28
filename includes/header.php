@@ -1,0 +1,1 @@
+<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Dashboard</title><link href='../assets/css/bootstrap.min.css' rel='stylesheet'></head><body>
