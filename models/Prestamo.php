@@ -170,7 +170,20 @@ WHERE p.id = ?;
                     $factor = floatval($ps['porcentaje']) / 100;
 
                     $aporte_capital = round($c['capital'] * $factor, 2);
-                    $aporte_interes = round($c['interes'] * $factor, 2);
+
+                    // Lógica de Interés Específico
+                    if (isset($ps['porcentaje_interes']) && $ps['porcentaje_interes'] > 0) {
+                        // Calcular interés basado en el % del socio sobre su propio capital (aporte)
+                        $tasaSocio = floatval($ps['porcentaje_interes']) / 100;
+                        $aporte_interes = round(floatval($ps['aporte']) * $tasaSocio, 2);
+
+                        // Si es mensual se asume que la tasa socio es mensual
+                        // TODO: Si el periodo cambia, habría que ajustar esta lógica si el % interés socio es anual.
+                        // Por simplicidad ahora asumo que el interés socio se aplica por cuota (como el interés del préstamo).
+                    } else {
+                        // Comportamiento anterior: Proporcional al interés cobrado al cliente
+                        $aporte_interes = round($c['interes'] * $factor, 2);
+                    }
 
                     $psdModel = new PrestamoSocioDetalle($this->conn);
                     $psdModel->crear([

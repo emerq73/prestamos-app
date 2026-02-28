@@ -1,9 +1,11 @@
 <?php
 require_once __DIR__ . '/../../models/Prestamo.php';
 require_once __DIR__ . '/../../models/PrestamoDetalle.php';
+require_once __DIR__ . '/../../models/PrestamoSocio.php';
 
 $prestamoModel = new Prestamo();
 $detalleModel = new PrestamoDetalle();
+$prestamoSocioModel = new PrestamoSocio();
 
 $id = $_GET['id'] ?? null;
 if (!$id) {
@@ -13,6 +15,7 @@ if (!$id) {
 
 $prestamo = $prestamoModel->obtenerPorId($id);
 $detalles = $detalleModel->obtenerPorPrestamo($id);
+$socios = $prestamoSocioModel->obtenerPorPrestamo($id);
 ?>
 
 <div class="mb-3 d-flex justify-content-between align-items-center">
@@ -73,6 +76,39 @@ $detalles = $detalleModel->obtenerPorPrestamo($id);
         </div>
     </div>
 </div>
+
+<!-- Información de Socios -->
+<?php if (!empty($socios)): ?>
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Socios Aportantes</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Socio</th>
+                            <th class="text-end">Aporte</th>
+                            <th class="text-center">% Participación</th>
+                            <th class="text-center">% Interés Socio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($socios as $s): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($s['nombre_completo']) ?></td>
+                                <td class="text-end">$ <?= number_format($s['aporte'], 2) ?></td>
+                                <td class="text-center"><?= number_format($s['porcentaje'], 2) ?>%</td>
+                                <td class="text-center"><?= number_format($s['porcentaje_interes'] ?? 0, 2) ?>%</td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
 
 
 <!-- Tabla de amortización (DEBAJO) -->

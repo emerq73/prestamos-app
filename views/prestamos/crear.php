@@ -70,28 +70,16 @@ $socios = $socioModel->obtenerTodos();
                     <div class="row mb-3">
                         <div class="col-md-4">
                             <label class="form-label">Monto del Préstamo</label>
-                            <input
-                                type="text"
-                                id="monto"
-                                class="form-control"
-                                placeholder="$ 0,00"
-                                inputmode="numeric"
-                                autocomplete="off"
-                                required>
+                            <input type="text" id="monto" class="form-control" placeholder="$ 0,00" inputmode="numeric"
+                                autocomplete="off" required>
 
                             <input type="hidden" name="monto" id="monto_real">
                         </div>
 
                         <div class="col-md-4">
                             <label class="form-label">% Interés</label>
-                            <input
-                                type="text"
-                                id="tasa_interes"
-                                inputmode="decimal"
-                                name="tasa_interes"
-                                class="form-control"
-                                placeholder="Ej: 15.5"
-                                required>
+                            <input type="text" id="tasa_interes" inputmode="decimal" name="tasa_interes"
+                                class="form-control" placeholder="Ej: 15.5" required>
                             <small id="error-msg" class="text-danger" style="display: none; position: absolute;">
                                 Solo se permiten números y un punto decimal.
                             </small>
@@ -107,14 +95,8 @@ $socios = $socioModel->obtenerTodos();
                         </style>
                         <div class="col-md-4">
                             <label class="form-label">Plazo (cuotas)</label>
-                            <input
-                                type="text"
-                                id="cantidad_entera"
-                                inputmode="numeric"
-                                name="plazo"
-                                class="form-control"
-                                placeholder="Ej: 500"
-                                required>
+                            <input type="text" id="cantidad_entera" inputmode="numeric" name="plazo"
+                                class="form-control" placeholder="Ej: 500" required>
                             <small id="error-msg-entero" class="text-danger" style="display: none; position: absolute;">
                                 Solo se permiten números enteros.
                             </small>
@@ -251,17 +233,21 @@ $socios = $socioModel->obtenerTodos();
             div.classList.add('socio-row');
             div.innerHTML = `
         <div class="row align-items-end">
-            <div class="col-md-5">
+            <div class="col-md-4">
                 <label>Socio</label>
                 <select name="socio_id[]" class="form-select select-socio" required>
                     <option value="">Seleccione...</option>
                     ${socios.map(s => `<option value="${s.id}">${s.nombre_completo} (${s.documento})</option>`).join('')}
                 </select>
             </div>
-            <div class="col-md-5">
+            <div class="col-md-3">
                 <label>Monto Aportado</label>
                 <input type="text" class="form-control aporte-mask" placeholder="$ 0,00" required>
                 <input type="hidden" name="socio_aporte[]" class="aporte-real">
+            </div>
+            <div class="col-md-3">
+                <label>% Interés Socio</label>
+                <input type="number" step="0.01" name="socio_interes[]" class="form-control" placeholder="Ej: 5" required>
             </div>
             <div class="col-md-2 text-end">
                 <button type="button" class="btn btn-danger btn-sm btnEliminar">X</button>
@@ -277,7 +263,7 @@ $socios = $socioModel->obtenerTodos();
             // Al cambiar de socio, refrescamos la disponibilidad en los demás
             selectSocio.addEventListener('change', validarSociosDuplicados);
 
-            maskInput.addEventListener('input', function() {
+            maskInput.addEventListener('input', function () {
                 let info = formatCurrency(this.value);
                 this.value = info.display;
                 realInput.value = info.real;
@@ -311,7 +297,7 @@ $socios = $socioModel->obtenerTodos();
         }
 
         // --- VALIDACIÓN FINAL CON SWEETALERT ---
-        formulario.addEventListener('submit', function(e) {
+        formulario.addEventListener('submit', function (e) {
             let totalAportado = 0;
             document.querySelectorAll('.aporte-real').forEach(input => {
                 totalAportado += parseFloat(input.value || 0);
@@ -340,14 +326,14 @@ $socios = $socioModel->obtenerTodos();
         const inputReal = document.getElementById('monto_real');
 
         // ⛔ Bloquear letras y símbolos no permitidos al escribir
-        inputMonto.addEventListener('keypress', function(e) {
+        inputMonto.addEventListener('keypress', function (e) {
             if (!/[0-9]/.test(e.key)) {
                 e.preventDefault();
             }
         });
 
         // 📋 Controlar pegado
-        inputMonto.addEventListener('paste', function(e) {
+        inputMonto.addEventListener('paste', function (e) {
             e.preventDefault();
 
             let texto = (e.clipboardData || window.clipboardData)
@@ -360,7 +346,7 @@ $socios = $socioModel->obtenerTodos();
         });
 
         // 🔄 Formatear en tiempo real
-        inputMonto.addEventListener('input', function() {
+        inputMonto.addEventListener('input', function () {
             let valor = this.value.replace(/[^\d]/g, '');
             aplicarFormato(valor);
         });
@@ -392,7 +378,7 @@ $socios = $socioModel->obtenerTodos();
         const input = document.getElementById('tasa_interes');
         const errorMsg = document.getElementById('error-msg');
 
-        input.addEventListener('input', function(e) {
+        input.addEventListener('input', function (e) {
             const startPos = this.selectionStart;
             const value = this.value;
 
@@ -422,7 +408,7 @@ $socios = $socioModel->obtenerTodos();
         const inputEntero = document.getElementById('cantidad_entera');
         const errorMsgEntero = document.getElementById('error-msg-entero');
 
-        inputEntero.addEventListener('input', function(e) {
+        inputEntero.addEventListener('input', function (e) {
             const value = this.value;
 
             // Filtro: Solo permite dígitos del 0 al 9
@@ -445,7 +431,7 @@ $socios = $socioModel->obtenerTodos();
         });
     </script>
     <script>
-        document.querySelector('form').addEventListener('submit', function(e) {
+        document.querySelector('form').addEventListener('submit', function (e) {
             if (!document.getElementById('monto_real').value) {
                 e.preventDefault();
                 alert('Debe ingresar un monto válido');

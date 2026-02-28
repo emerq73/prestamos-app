@@ -99,12 +99,14 @@ class PrestamosController
 
                     $aporte = floatval($_POST['socio_aporte'][$i]);
                     $porcentaje = ($aporte / $data['monto']) * 100;
+                    $socio_interes = floatval($_POST['socio_interes'][$i] ?? 0);
 
                     $this->prestamoSocioModel->crear([
                         'prestamo_id' => $prestamoId,
                         'socio_id' => $_POST['socio_id'][$i],
                         'aporte' => $aporte,
-                        'porcentaje' => $porcentaje
+                        'porcentaje' => $porcentaje,
+                        'porcentaje_interes' => $socio_interes
                     ]);
                 }
             }

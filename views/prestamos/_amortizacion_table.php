@@ -31,6 +31,7 @@
                 <?php
                 $badgeClass = match ($row['estado']) {
                   'pagado' => 'bg-success',
+                  'solo_interes' => 'bg-info text-white',
                   'pendiente' => 'bg-warning text-dark',
                   'mora' => 'bg-danger',
                   default => 'bg-secondary'

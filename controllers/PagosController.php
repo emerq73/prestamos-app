@@ -104,9 +104,6 @@ class PagosController
                 ];
 
                 $montoTotal = $interesPendiente;
-
-                // crear cuota adicional y recalcular
-                $this->pagoModel->crearCuotaExtraPorInteres($prestamoId, $detalleId);
             }
 
             /* =============================
@@ -151,11 +148,12 @@ class PagosController
                 $this->prestamoModel->actualizarEstado($prestamoId, 'cancelado');
             }
 
-            header("Location: dashboard.php?modulo=pagos&prestamo_id=$prestamoId&msg=pago_ok&tipo=$tipo");
+            header("Location: /prestamos-app/views/dashboard.php?modulo=pagos&prestamo_id=$prestamoId&msg=pago_ok&tipo=$tipo");
             exit;
 
         } catch (Exception $e) {
-            header("Location: dashboard.php?modulo=pagos&action=crear&prestamo_id=$prestamoId&error=" . urlencode($e->getMessage()));
+            $msg = urlencode($e->getMessage());
+            header("Location: /prestamos-app/views/dashboard.php?modulo=pagos&action=crear&prestamo_id=$prestamoId&error=$msg");
             exit;
         }
     }

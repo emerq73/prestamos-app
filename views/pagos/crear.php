@@ -15,7 +15,12 @@ if (!$prestamo) {
 }
 ?>
 
-<h3>Registrar Pago</h3>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Registrar Pago</h3>
+    <a href="dashboard.php?modulo=pagos" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Pagos
+    </a>
+</div>
 <form method="POST" action="dashboard.php?modulo=pagos&action=guardar">
     <!-- <form method="POST" action="controllers/PagosController.php?action=guardar"> -->
 
@@ -50,6 +55,7 @@ if (!$prestamo) {
                     <th>Interés</th>
                     <th>Pagado Cap.</th>
                     <th>Pagado Int.</th>
+                    <th>Saldo</th>
                     <th>Estado</th>
                 </tr>
             </thead>
@@ -70,10 +76,12 @@ if (!$prestamo) {
                         <td>$<?= number_format($c['interes'], 2) ?></td>
                         <td>$<?= number_format($c['pagado_capital'], 2) ?></td>
                         <td>$<?= number_format($c['pagado_interes'], 2) ?></td>
+                        <td>$<?= number_format($c['saldo_restante'], 2) ?></td>
                         <td>
                             <?php
                             $badgeClass = match ($c['estado']) {
                                 'pagado' => 'bg-success',
+                                'solo_interes' => 'bg-info text-white',
                                 'pendiente' => 'bg-warning text-dark',
                                 'mora' => 'bg-danger',
                                 default => 'bg-secondary'

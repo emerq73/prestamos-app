@@ -38,21 +38,33 @@ class Pago
             $pagoItemStmt = $this->db->prepare("INSERT INTO pago_items (pago_id, prestamos_detalle_id, monto_capital, monto_interes) VALUES (?, ?, ?, ?)");
 
             foreach ($items as $it) {
+                // 1. Registrar el item del pago
                 $pagoItemStmt->execute([$pagoId, $it['prestamos_detalle_id'], $it['monto_capital'], $it['monto_interes']]);
 
-                // ACTUALIZAR saldo en prestamos_detalle: incrementar pagado_capital/pagado_interes
+                // 2. Si es solo interés, aplicar la lógica de "patear" el capital antes de actualizar
+                if ($tipo === 'interes') {
+                    $this->crearCuotaExtraPorInteresManual($prestamoId, $it['prestamos_detalle_id']);
+                }
+
+                // 3. ACTUALIZAR montos pagados
                 $upd = $this->db->prepare("UPDATE prestamos_detalle SET pagado_capital = pagado_capital + ?, pagado_interes = pagado_interes + ? WHERE id = ?");
                 $upd->execute([$it['monto_capital'], $it['monto_interes'], $it['prestamos_detalle_id']]);
 
-                // opcional: actualizar estado (parcial/pagada)
-                $check = $this->db->prepare("SELECT capital, interes, pagado_capital, pagado_interes FROM prestamos_detalle WHERE id = ?");
+                // 4. Determinar estado (respetando 'solo_interes' si ya se aplicó)
+                $check = $this->db->prepare("SELECT capital, interes, pagado_capital, pagado_interes, estado FROM prestamos_detalle WHERE id = ?");
                 $check->execute([$it['prestamos_detalle_id']]);
                 $row = $check->fetch(PDO::FETCH_ASSOC);
+
                 if ($row) {
+                    if ($row['estado'] === 'solo_interes') {
+                        continue; // No sobreescribir si ya es solo_interes
+                    }
+
                     $totalCap = (float) $row['capital'];
                     $totalInt = (float) $row['interes'];
                     $pc = (float) $row['pagado_capital'];
                     $pi = (float) $row['pagado_interes'];
+
                     $estado = ($pc >= $totalCap && $pi >= $totalInt) ? 'pagado' : 'parcial';
                     $this->db->prepare("UPDATE prestamos_detalle SET estado = ? WHERE id = ?")->execute([$estado, $it['prestamos_detalle_id']]);
                 }
@@ -65,25 +77,35 @@ class Pago
             throw $e;
         }
     }
-    public function crearCuotaExtraPorInteres($prestamoId, $detalleId)
+    /**
+     * LOTE DE LÓGICA PARA SOLO INTERESES (Debe ejecutarse dentro de una transacción)
+     */
+    private function crearCuotaExtraPorInteresManual($prestamoId, $detalleId)
     {
-        // 1. Obtener cuota actual
-        $stmt = $this->db->prepare("SELECT * FROM prestamos_detalle WHERE id = ?");
-        $stmt->execute([$detalleId]);
-        $cuotaActual = $stmt->fetch(PDO::FETCH_ASSOC);
+        // 1. Obtener datos básicos del préstamo y la cuota
+        $stmtP = $this->db->prepare("SELECT periodo_pago FROM prestamos WHERE id = ?");
+        $stmtP->execute([$prestamoId]);
+        $prestamo = $stmtP->fetch(PDO::FETCH_ASSOC);
+        $periodo = $prestamo['periodo_pago'] ?? 'mensual';
+
+        $stmtC = $this->db->prepare("SELECT * FROM prestamos_detalle WHERE id = ?");
+        $stmtC->execute([$detalleId]);
+        $cuotaActual = $stmtC->fetch(PDO::FETCH_ASSOC);
 
         if (!$cuotaActual)
             throw new Exception("Cuota no encontrada");
 
-        // 2. Marcar cuota actual como PARCIAL. 
+        // 2. Modificar cuota actual: Capital 0, Estado 'solo_interes'
         $stmtUpdate = $this->db->prepare("
             UPDATE prestamos_detalle 
-            SET estado = 'parcial'
+            SET capital = 0, 
+                total_cuota = interes,
+                estado = 'solo_interes'
             WHERE id = ?
         ");
         $stmtUpdate->execute([$detalleId]);
 
-        // 3. Obtener última cuota para calcular fecha y numero
+        // 3. Obtener última cuota para calcular fecha y número
         $stmtLast = $this->db->prepare("
             SELECT numero_cuota, fecha_programada 
             FROM prestamos_detalle 
@@ -95,62 +117,79 @@ class Pago
         $ultima = $stmtLast->fetch(PDO::FETCH_ASSOC);
 
         $nuevaNumero = $ultima['numero_cuota'] + 1;
-        $nuevaFecha = date('Y-m-d', strtotime($ultima['fecha_programada'] . ' +1 month')); // Asumimos mensual por defecto, idealmente leer periodo
 
-        // 4. Crear nueva cuota al final con el CAPITAL que no se pagó hoy
+        // Calcular fecha según periodo REAL del préstamo
+        try {
+            $fechaObj = new DateTime($ultima['fecha_programada']);
+            switch ($periodo) {
+                case 'diario':
+                    $fechaObj->modify('+1 day');
+                    break;
+                case 'semanal':
+                    $fechaObj->modify('+7 days');
+                    break;
+                case 'quincenal':
+                    $fechaObj->modify('+15 days');
+                    break;
+                case 'mensual':
+                    $fechaObj->modify('+1 month');
+                    break;
+                case 'anual':
+                    $fechaObj->modify('+1 year');
+                    break;
+                default:
+                    $fechaObj->modify('+1 month');
+                    break;
+            }
+            $nuevaFecha = $fechaObj->format('Y-m-d');
+        } catch (Exception $e) {
+            $nuevaFecha = date('Y-m-d', strtotime($ultima['fecha_programada'] . ' +1 month'));
+        }
+
+        // 4. Crear nueva cuota al final con el CAPITAL que se retiró
         $stmtInsert = $this->db->prepare("
             INSERT INTO prestamos_detalle
             (prestamo_id, numero_cuota, fecha_programada, capital, interes, mora, total_cuota, saldo_restante, estado)
             VALUES (?, ?, ?, ?, ?, 0, ?, 0, 'pendiente')
         ");
 
-        $nuevoCapital = $cuotaActual['capital'];
-        $nuevoInteres = $cuotaActual['interes']; // Se mantiene el interés proyectado
-        $nuevaCuotaTotal = $nuevoCapital + $nuevoInteres;
+        $nuevoCap = floatval($cuotaActual['capital']);
+        $nuevoInt = floatval($cuotaActual['interes']);
+        $nuevoTotal = round($nuevoCap + $nuevoInt, 2);
 
-        $stmtInsert->execute([
-            $prestamoId,
-            $nuevaNumero,
-            $nuevaFecha,
-            $nuevoCapital,
-            $nuevoInteres,
-            $nuevaCuotaTotal
-        ]);
+        $stmtInsert->execute([$prestamoId, $nuevaNumero, $nuevaFecha, $nuevoCap, $nuevoInt, $nuevoTotal]);
 
-        // 5. RECALCULAR SALDOS (En base a Deuda Total)
-        // User: "cuando se paga solo interes se resta... solo el valor del interes. las cuotas subsiguientes se resta la total_cuota"
+        // 5. Recalcular saldos de todo el préstamo
+        $this->recalcularSaldosPrestamo($prestamoId);
+    }
 
-        $stmtAll = $this->db->prepare("SELECT * FROM prestamos_detalle WHERE prestamo_id = ? ORDER BY numero_cuota ASC");
-        $stmtAll->execute([$prestamoId]);
-        $todas = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
+    private function recalcularSaldosPrestamo($prestamoId)
+    {
+        // El saldo en este sistema trackea el CAPITAL pendiente.
+        $stmtP = $this->db->prepare("SELECT monto FROM prestamos WHERE id = ?");
+        $stmtP->execute([$prestamoId]);
+        $prestamo = $stmtP->fetch(PDO::FETCH_ASSOC);
+        $saldoActual = floatval($prestamo['monto'] ?? 0);
 
-        // Saldo Inicial = Suma de todo el Capital + Interés programado de todas las cuotas
-        $totalOriginalConIntereses = 0;
-        foreach ($todas as $t) {
-            $totalOriginalConIntereses += ($t['capital'] + $t['interes']);
+        $stmt = $this->db->prepare("SELECT * FROM prestamos_detalle WHERE prestamo_id = ? ORDER BY numero_cuota ASC");
+        $stmt->execute([$prestamoId]);
+        $cuotas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $upd = $this->db->prepare("UPDATE prestamos_detalle SET saldo_restante = ? WHERE id = ?");
+
+        foreach ($cuotas as $c) {
+            // Descontamos el capital de esta cuota al saldo acumulado
+            $cap = floatval($c['capital']);
+            $saldoActual = round(max(0, $saldoActual - $cap), 2);
+
+            $upd->execute([$saldoActual, $c['id']]);
         }
+    }
 
-        $saldoActual = $totalOriginalConIntereses;
-
-        foreach ($todas as $c) {
-            // Regla de descuento de saldo:
-            if ($c['estado'] === 'parcial') {
-                // Si es parcial (solo interés), el saldo baja solo por el interés de esta cuota
-                $descuento = (float) $c['interes'];
-            } else {
-                // Si es pagado o pendiente, el saldo baja por la cuota completa
-                $descuento = (float) $c['capital'] + (float) $c['interes'];
-            }
-
-            $nuevoSaldoRestante = round(max(0, $saldoActual - $descuento), 2);
-
-            $this->db->prepare("UPDATE prestamos_detalle SET saldo_restante = ? WHERE id = ?")
-                ->execute([$nuevoSaldoRestante, $c['id']]);
-
-            $saldoActual = $nuevoSaldoRestante;
-        }
-
-        return $this->db->lastInsertId();
+    public function crearCuotaExtraPorInteres($prestamoId, $detalleId)
+    {
+        // Redirigir por compatibilidad si algo lo llama externamente
+        return true;
     }
     public function obtenerDetallePago($id)
     {

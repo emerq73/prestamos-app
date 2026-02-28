@@ -11,12 +11,12 @@ $prestamoId = isset($_GET['prestamo_id']) ? intval($_GET['prestamo_id']) : 0;
 <!-- SweetAlert para Pago Exitoso -->
 <?php if (isset($_GET['msg']) && $_GET['msg'] === 'pago_ok'): ?>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             let tipo = '<?= $_GET['tipo'] ?? 'pago' ?>';
             let texto = '';
-            if(tipo === 'cuota') texto = 'Pago de cuota registrado exitosamente.';
-            else if(tipo === 'interes') texto = 'Pago de intereses registrado. Se ha generado una nueva cuota al final.';
-            else if(tipo === 'total') texto = 'Pago total registrado. ¡Préstamo cancelado!';
+            if (tipo === 'cuota') texto = 'Pago de cuota registrado exitosamente.';
+            else if (tipo === 'interes') texto = 'Pago de intereses registrado. Se ha generado una nueva cuota al final.';
+            else if (tipo === 'total') texto = 'Pago total registrado. ¡Préstamo cancelado!';
             else texto = 'Pago registrado exitosamente.';
 
             Swal.fire({
@@ -109,10 +109,15 @@ $pagos = $pagoModel->obtenerPagosPorPrestamo($prestamoId);
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3>Pagos del Préstamo #<?= $prestamoId ?> - Historial de Pagos</h3>
-    <a href="dashboard.php?modulo=pagos&action=crear&prestamo_id=<?= $prestamoId ?>" class="btn btn-success">
-        + Nuevo Pago
-    </a>
+    <h3>Pagos del Préstamo #<?= $prestamoId ?> - Historial</h3>
+    <div>
+        <a href="dashboard.php?modulo=pagos" class="btn btn-secondary me-2">
+            <i class="bi bi-arrow-left"></i> Volver a Pagos
+        </a>
+        <a href="dashboard.php?modulo=pagos&action=crear&prestamo_id=<?= $prestamoId ?>" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Nuevo Pago
+        </a>
+    </div>
 </div>
 
 <div class="card mb-3">
