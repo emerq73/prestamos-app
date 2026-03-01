@@ -47,11 +47,21 @@ WHERE p.id = ?;
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function obtenerTodos()
+    public function obtenerTodos($estado = null)
     {
-        $stmt = $this->conn->query("SELECT p.*, d.nombre_completo AS deudor_nombre, d.documento AS deudor_documento FROM prestamos p
-                                  LEFT JOIN deudores d ON d.id = p.deudor_id
-                                  ORDER BY p.created_at ASC");
+        $sql = "SELECT p.*, d.nombre_completo AS deudor_nombre, d.documento AS deudor_documento FROM prestamos p
+                LEFT JOIN deudores d ON d.id = p.deudor_id";
+
+        $params = [];
+        if ($estado && $estado !== 'todos') {
+            $sql .= " WHERE p.estado = ?";
+            $params[] = $estado;
+        }
+
+        $sql .= " ORDER BY p.created_at ASC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 

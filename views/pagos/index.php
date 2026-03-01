@@ -6,26 +6,58 @@ $prestamoModel = new Prestamo();
 $pagoModel = new Pago();
 
 $prestamoId = isset($_GET['prestamo_id']) ? intval($_GET['prestamo_id']) : 0;
+$estadoFiltro = $_GET['estado'] ?? 'todos';
 ?>
+
+<script>
+    function enviarRecibo(pagoId) {
+        Swal.fire({
+            title: 'Enviar Comprobante',
+            input: 'email',
+            inputLabel: 'Correo del cliente',
+            inputPlaceholder: 'cliente@email.com',
+            showCancelButton: true,
+            confirmButtonText: 'Enviar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'Enviando...', didOpen: () => Swal.showLoading() });
+
+                fetch('../reportes/EnviarReciboPago.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `pago_id=${pagoId}&email=${result.value}`
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        Swal.fire(data.status === 'ok' ? 'Éxito' : 'Error', data.msg, data.status === 'ok' ? 'success' : 'error');
+                    })
+                    .catch(err => Swal.fire('Error', 'Fallo de conexión', 'error'));
+            }
+        });
+    }
+
+    function confirmarVerPagos(prestamoId) {
+        Swal.fire({
+            title: 'Préstamo Cancelado',
+            text: 'Este préstamo ya está cancelado. ¿Desea ver el historial de pagos?',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, ver historial',
+            cancelButtonText: 'No, volver'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = `dashboard.php?modulo=pagos&prestamo_id=${prestamoId}`;
+            }
+        });
+    }
+</script>
 
 <!-- SweetAlert para Pago Exitoso -->
 <?php if (isset($_GET['msg']) && $_GET['msg'] === 'pago_ok'): ?>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            let tipo = '<?= $_GET['tipo'] ?? 'pago' ?>';
-            let texto = '';
-            if (tipo === 'cuota') texto = 'Pago de cuota registrado exitosamente.';
-            else if (tipo === 'interes') texto = 'Pago de intereses registrado. Se ha generado una nueva cuota al final.';
-            else if (tipo === 'total') texto = 'Pago total registrado. ¡Préstamo cancelado!';
-            else texto = 'Pago registrado exitosamente.';
-
-            Swal.fire({
-                icon: 'success',
-                title: '¡Pago Exitoso!',
-                text: texto,
-                confirmButtonColor: '#198754'
-            });
-        });
+    <script>     document.addEventListener('DOMContentLoaded', function () {         let tipo = '<?= $_GET['tipo'] ?? 'pago' ?>';         let texto = '';         if (tipo === 'cuota') texto = 'Pago de cuota registrado exitosamente.';         else if (tipo === 'interes') texto = 'Pago de intereses registrado. Se ha generado una nueva cuota al final.';         else if (tipo === 'total') texto = 'Pago total registrado. ¡Préstamo cancelado!';         else texto = 'Pago registrado exitosamente.';
+             Swal.fire({             icon: 'success',             title: '¡Pago Exitoso!',             text: texto,             confirmButtonColor: '#198754'         });     });
     </script>
 <?php endif; ?>
 
@@ -37,10 +69,19 @@ $prestamoId = isset($_GET['prestamo_id']) ? intval($_GET['prestamo_id']) : 0;
 */
 if ($prestamoId <= 0) {
 
-    $prestamos = $prestamoModel->obtenerTodos();
+    $prestamos = $prestamoModel->obtenerTodos($estadoFiltro);
     ?>
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3><i class="bi bi-credit-card"></i> Módulo de Pagos</h3>
+        <div class="d-flex align-items-center">
+            <label class="me-2 mb-0 small">Filtrar:</label>
+            <select class="form-select form-select-sm" style="width: 130px"
+                onchange="location.href='dashboard.php?modulo=pagos&estado=' + this.value">
+                <option value="todos" <?= $estadoFiltro === 'todos' ? 'selected' : '' ?>>Todos</option>
+                <option value="activo" <?= $estadoFiltro === 'activo' ? 'selected' : '' ?>>Activos</option>
+                <option value="cancelado" <?= $estadoFiltro === 'cancelado' ? 'selected' : '' ?>>Cancelados</option>
+            </select>
+        </div>
     </div>
 
     <div class="card">
@@ -79,9 +120,15 @@ if ($prestamoId <= 0) {
                                 </span>
                             </td>
                             <td class="text-end">
-                                <a href="dashboard.php?modulo=pagos&prestamo_id=<?= $p['id'] ?>" class="btn btn-sm btn-primary">
-                                    Ver pagos
-                                </a>
+                                <?php if (($p['estado'] ?? 'activo') === 'cancelado'): ?>
+                                    <button onclick="confirmarVerPagos(<?= $p['id'] ?>)" class="btn btn-sm btn-primary">
+                                        Ver pagos
+                                    </button>
+                                <?php else: ?>
+                                    <a href="dashboard.php?modulo=pagos&prestamo_id=<?= $p['id'] ?>" class="btn btn-sm btn-primary">
+                                        Ver pagos
+                                    </a>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -183,36 +230,6 @@ $pagos = $pagoModel->obtenerPagosPorPrestamo($prestamoId);
             <?php endforeach; ?>
         </tbody>
     </table>
-</div>
-
-<script>
-    function enviarRecibo(pagoId) {
-        Swal.fire({
-            title: 'Enviar Comprobante',
-            input: 'email',
-            inputLabel: 'Correo del cliente',
-            inputPlaceholder: 'cliente@email.com',
-            showCancelButton: true,
-            confirmButtonText: 'Enviar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({ title: 'Enviando...', didOpen: () => Swal.showLoading() });
-
-                fetch('../reportes/EnviarReciboPago.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `pago_id=${pagoId}&email=${result.value}`
-                })
-                    .then(res => res.json())
-                    .then(data => {
-                        Swal.fire(data.status === 'ok' ? 'Éxito' : 'Error', data.msg, data.status === 'ok' ? 'success' : 'error');
-                    })
-                    .catch(err => Swal.fire('Error', 'Fallo de conexión', 'error'));
-            }
-        });
-    }
-</script>
-</table>
 </div>
 
 <a href="dashboard.php?modulo=pagos" class="btn btn-secondary mt-3">

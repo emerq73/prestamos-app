@@ -109,25 +109,13 @@ class PagosController
             /* =============================
                PAGO TOTAL
             ============================= */
+            /* =============================
+               PAGO TOTAL (Liquidación)
+            ============================= */
             if ($tipo === 'total') {
-
-                $cuotas = $this->detalleModel->obtenerPorPrestamo($prestamoId);
-
-                foreach ($cuotas as $c) {
-                    if ($c['estado'] !== 'pagado') {
-
-                        $cap = $c['capital'] - $c['pagado_capital'];
-                        $int = $c['interes'] - $c['pagado_interes'];
-
-                        $items[] = [
-                            'prestamos_detalle_id' => $c['id'],
-                            'monto_capital' => $cap,
-                            'monto_interes' => $int
-                        ];
-
-                        $montoTotal += ($cap + $int);
-                    }
-                }
+                $pagoId = $this->pagoModel->procesarPagoTotal($prestamoId, $metodo, $referencia);
+                header("Location: /prestamos-app/views/dashboard.php?modulo=pagos&prestamo_id=$prestamoId&msg=pago_ok&tipo=total");
+                exit;
             }
 
             // Registrar pago

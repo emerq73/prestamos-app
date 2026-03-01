@@ -193,6 +193,7 @@ class Pago
     }
     public function obtenerDetallePago($id)
     {
+        // ... (rest of function unchanged)
         // 1. Obtener datos generales del pago
         $stmt = $this->db->prepare("
             SELECT p.*, 
@@ -222,5 +223,116 @@ class Pago
 
         $pago['items'] = $items;
         return $pago;
+    }
+
+    /**
+     * LÓGICA PARA PAGO TOTAL
+     */
+    public function obtenerUltimaFechaActividad($prestamoId)
+    {
+        // Intentar obtener fecha del último pago realizado
+        $stmt = $this->db->prepare("SELECT fecha FROM pagos WHERE prestamo_id = ? ORDER BY fecha DESC LIMIT 1");
+        $stmt->execute([$prestamoId]);
+        $ultimoPago = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($ultimoPago) {
+            return $ultimoPago['fecha'];
+        }
+
+        // Si no hay pagos, retornar fecha de inicio del préstamo
+        $stmtP = $this->db->prepare("SELECT fecha_inicio FROM prestamos WHERE id = ?");
+        $stmtP->execute([$prestamoId]);
+        $prestamo = $stmtP->fetch(PDO::FETCH_ASSOC);
+        return $prestamo['fecha_inicio'] ?? date('Y-m-d');
+    }
+
+    public function obtenerCapitalPendiente($prestamoId)
+    {
+        $stmt = $this->db->prepare("SELECT SUM(capital - pagado_capital) as pendiente FROM prestamos_detalle WHERE prestamo_id = ?");
+        $stmt->execute([$prestamoId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return floatval($row['pendiente'] ?? 0);
+    }
+
+    public function calcularLiquidacionTotal($prestamoId)
+    {
+        $fechaUltima = $this->obtenerUltimaFechaActividad($prestamoId);
+        $fechaHoy = date('Y-m-d');
+
+        $d1 = new DateTime($fechaUltima);
+        $d2 = new DateTime($fechaHoy);
+        $diff = $d1->diff($d2);
+        $diasTranscurridos = $diff->days;
+
+        $capitalPendiente = $this->obtenerCapitalPendiente($prestamoId);
+
+        // Obtener tasa para calcular el interés del mes
+        $stmt = $this->db->prepare("SELECT tasa_interes FROM prestamos WHERE id = ?");
+        $stmt->execute([$prestamoId]);
+        $p = $stmt->fetch(PDO::FETCH_ASSOC);
+        $tasa = floatval($p['tasa_interes'] ?? 0);
+
+        // Interés del mes = Capital Pendiente * Tasa (%)
+        $interesMes = $capitalPendiente * ($tasa / 100);
+
+        // Interés a la fecha = (Interés Mensual / 30) * Días
+        $interesHoy = ($interesMes / 30) * $diasTranscurridos;
+
+        return [
+            'capital_pendiente' => round($capitalPendiente, 2),
+            'interes_hoy' => round($interesHoy, 2),
+            'dias' => $diasTranscurridos,
+            'fecha_ultima' => $fechaUltima,
+            'total' => round($capitalPendiente + $interesHoy, 2)
+        ];
+    }
+
+    public function procesarPagoTotal($prestamoId, $metodo, $referencia)
+    {
+        $liq = $this->calcularLiquidacionTotal($prestamoId);
+
+        try {
+            $this->db->beginTransaction();
+
+            // 1. Crear el registro del pago global
+            $stmt = $this->db->prepare("INSERT INTO pagos (prestamo_id, fecha, monto_total, tipo, metodo_pago, referencia) VALUES (?, NOW(), ?, 'total', ?, ?)");
+            $stmt->execute([$prestamoId, $liq['total'], $metodo, $referencia]);
+            $pagoId = $this->db->lastInsertId();
+
+            // 2. Liquidar todas las cuotas pendientes
+            $stmtCuotas = $this->db->prepare("SELECT id, capital, pagado_capital, interes, pagado_interes FROM prestamos_detalle WHERE prestamo_id = ? AND estado NOT IN ('pagado', 'solo_interes')");
+            $stmtCuotas->execute([$prestamoId]);
+            $cuotasPendientes = $stmtCuotas->fetchAll(PDO::FETCH_ASSOC);
+
+            // Vamos a distribuir el capital y el interés de liquidación entre las cuotas
+            // aunque sea algo simbólico para que la DB quede consistente.
+            $capRestante = $liq['capital_pendiente'];
+            $intRestante = $liq['interes_hoy'];
+
+            foreach ($cuotasPendientes as $index => $c) {
+                $pCap = $c['capital'] - $c['pagado_capital'];
+                // La última cuota de la liquidación se lleva lo que sobre del interés calculado
+                $pInt = ($index === count($cuotasPendientes) - 1) ? $intRestante : min($intRestante, $c['interes'] - $c['pagado_interes']);
+
+                $intRestante -= $pInt;
+
+                // Actualizar detalle
+                $upd = $this->db->prepare("UPDATE prestamos_detalle SET pagado_capital = pagado_capital + ?, pagado_interes = pagado_interes + ?, estado = 'pagado', saldo_restante = 0 WHERE id = ?");
+                $upd->execute([$pCap, $pInt, $c['id']]);
+
+                // Registrar en pago_items
+                $stmtItem = $this->db->prepare("INSERT INTO pago_items (pago_id, prestamos_detalle_id, monto_capital, monto_interes) VALUES (?, ?, ?, ?)");
+                $stmtItem->execute([$pagoId, $c['id'], $pCap, $pInt]);
+            }
+
+            // 3. Finalizar préstamo
+            $this->db->prepare("UPDATE prestamos SET estado = 'cancelado' WHERE id = ?")->execute([$prestamoId]);
+
+            $this->db->commit();
+            return $pagoId;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
     }
 }
