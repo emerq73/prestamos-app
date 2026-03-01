@@ -1,5 +1,6 @@
 <?php
 // $prestamos viene del controlador
+$estadoFiltro = $_GET['estado'] ?? 'todos';
 ?>
 
 <div class="container-fluid">
@@ -9,9 +10,19 @@
             <i class="bi bi-cash-coin me-2"></i> Préstamos
         </h3>
 
-        <a href="dashboard.php?modulo=prestamos/crear" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i> Nuevo préstamo
-        </a>
+        <div class="d-flex align-items-center">
+            <label class="me-2 mb-0 small fw-bold">Filtrar:</label>
+            <select class="form-select form-select-sm me-3" style="width: 150px"
+                onchange="location.href='dashboard.php?modulo=prestamos&estado=' + this.value">
+                <option value="todos" <?= $estadoFiltro === 'todos' ? 'selected' : '' ?>>Todos</option>
+                <option value="activo" <?= $estadoFiltro === 'activo' ? 'selected' : '' ?>>Activos</option>
+                <option value="cancelado" <?= $estadoFiltro === 'cancelado' ? 'selected' : '' ?>>Cancelados</option>
+            </select>
+
+            <a href="dashboard.php?modulo=prestamos/crear" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Nuevo préstamo
+            </a>
+        </div>
     </div>
 
     <?php if (isset($_GET['msg']) && $_GET['msg'] === 'creado'): ?>
@@ -81,7 +92,7 @@
                                         <?php if ($p['estado'] == 'activo'): ?>
                                             <span class="badge bg-success px-3 py-2 shadow-sm">Activo</span>
                                         <?php else: ?>
-                                            <span class="badge bg-secondary px-3 py-2">Finalizado</span>
+                                            <span class="badge bg-secondary px-3 py-2">Cancelado</span>
                                         <?php endif; ?>
                                     </td>
 

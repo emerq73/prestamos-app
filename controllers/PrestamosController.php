@@ -22,7 +22,8 @@ class PrestamosController
 
     public function index()
     {
-        $prestamos = $this->prestamoModel->obtenerTodos();
+        $estado = $_GET['estado'] ?? 'todos';
+        $prestamos = $this->prestamoModel->obtenerTodos($estado);
         require_once __DIR__ . '/../views/prestamos/index.php';
     }
 
