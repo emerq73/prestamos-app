@@ -127,6 +127,7 @@ $content = ob_get_clean();
     <meta charset="UTF-8">
     <title>Panel de Control - LdHoldings</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="../assets/logo.png">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css"
@@ -290,13 +291,13 @@ $content = ob_get_clean();
                         <i class="bi bi-wallet2"></i><span class="ms-2">Portafolios de Inversión</span>
                     </a>
                 <?php elseif ($usuarioRol === 'operador'): ?>
-                        <!-- Opciones para Operador: Solo Préstamos y Pagos -->
-                        <a href="dashboard.php?modulo=prestamos" class="<?= $modulo === 'prestamos' ? 'active' : '' ?>">
-                            <i class="bi bi-cash-coin"></i><span class="ms-2">Préstamos</span>
-                        </a>
-                        <a href="dashboard.php?modulo=pagos" class="<?= $modulo === 'pagos' ? 'active' : '' ?>">
-                            <i class="bi bi-credit-card"></i><span class="ms-2">Pagos</span>
-                        </a>
+                    <!-- Opciones para Operador: Solo Préstamos y Pagos -->
+                    <a href="dashboard.php?modulo=prestamos" class="<?= $modulo === 'prestamos' ? 'active' : '' ?>">
+                        <i class="bi bi-cash-coin"></i><span class="ms-2">Préstamos</span>
+                    </a>
+                    <a href="dashboard.php?modulo=pagos" class="<?= $modulo === 'pagos' ? 'active' : '' ?>">
+                        <i class="bi bi-credit-card"></i><span class="ms-2">Pagos</span>
+                    </a>
                 <?php else: ?>
                     <!-- Menú estándar para Admin/Operador -->
                     <a href="dashboard.php" class="<?= $modulo === 'inicio' ? 'active' : '' ?>">
