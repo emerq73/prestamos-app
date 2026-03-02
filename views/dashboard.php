@@ -61,8 +61,13 @@ if (!in_array($modulo, $pluralExceptions)) {
     $controllerBase = ($modulo === 'deudores') ? 'deudor' : rtrim($modulo, 's');
 }
 
-$controllerName = ucfirst($controllerBase) . 'Controller';
-$controllerFile = __DIR__ . "/../controllers/$controllerName.php";
+if ($modulo === 'reportes') {
+    $controllerName = 'ReportesController'; // Forzado a plural con 's'
+    $controllerFile = __DIR__ . "/../controllers/$controllerName.php";
+} else {
+    $controllerName = ucfirst($controllerBase) . 'Controller';
+    $controllerFile = __DIR__ . "/../controllers/$controllerName.php";
+}
 // ---------------------------------------------------------
 // DISPATCH & OUTPUT BUFFERING
 // ---------------------------------------------------------
@@ -197,6 +202,42 @@ $content = ob_get_clean();
             background: #0b5ed7;
         }
 
+        /* 🔹 SUBMENU STYLES */
+        .sidebar-submenu {
+            background: rgba(0, 0, 0, 0.2);
+            padding-left: 15px;
+            display: none;
+        }
+
+        .sidebar-submenu.show {
+            display: block;
+        }
+
+        .sidebar-submenu a {
+            padding: 8px 20px;
+            font-size: 0.9rem;
+        }
+
+        [data-bs-theme="light"] .sidebar-submenu {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .sidebar a[data-bs-toggle="collapse"]::after {
+            content: "\F282";
+            font-family: "bootstrap-icons";
+            margin-left: auto;
+            transition: 0.3s;
+        }
+
+        .sidebar a[aria-expanded="true"]::after {
+            transform: rotate(180deg);
+        }
+
+        .sidebar-collapsed .sidebar-submenu,
+        .sidebar-collapsed a[data-bs-toggle="collapse"]::after {
+            display: none !important;
+        }
+
         .topbar {
             background: var(--bs-body-bg);
             padding: 10px 20px;
@@ -233,35 +274,83 @@ $content = ob_get_clean();
             <div class="text-center mb-4">
                 <img src="../assets/logo.png" class="img-fluid mb-2" style="max-width:120px;">
                 <div class="fw-bold"><?= htmlspecialchars($usuarioNombre) ?></div>
+                <div class="small opacity-75"><?= ucfirst(htmlspecialchars($usuarioRol)) ?></div>
             </div>
 
             <!-- 🔹 OPCIONES -->
             <div class="flex-grow-1">
-                <a href="dashboard.php" class="<?= $modulo === 'inicio' ? 'active' : '' ?>">
-                    <i class="bi bi-house-door"></i><span class="ms-2">Inicio</span>
-                </a>
-                <a href="dashboard.php?modulo=usuarios" class="<?= $modulo === 'usuarios' ? 'active' : '' ?>">
-                    <i class="bi bi-person-lines-fill"></i><span class="ms-2">Usuarios</span>
-                </a>
-                <a href="dashboard.php?modulo=socios" class="<?= $modulo === 'socios' ? 'active' : '' ?>">
-                    <i class="bi bi-piggy-bank"></i><span class="ms-2">Socios</span>
-                </a>
-                <a href="dashboard.php?modulo=deudores" class="<?= $modulo === 'deudores' ? 'active' : '' ?>">
-                    <i class="bi bi-people-fill"></i><span class="ms-2">Deudores</span>
-                </a>
-                <a href="dashboard.php?modulo=prestamos" class="<?= $modulo === 'prestamos' ? 'active' : '' ?>">
-                    <i class="bi bi-cash-coin"></i><span class="ms-2">Préstamos</span>
-                </a>
-                <a href="dashboard.php?modulo=pagos" class="<?= $modulo === 'pagos' ? 'active' : '' ?>">
-                    <i class="bi bi-credit-card"></i><span class="ms-2">Pagos</span>
-                </a>
-                <a href="dashboard.php?modulo=reportes" class="<?= $modulo === 'reportes' ? 'active' : '' ?>">
-                    <i class="bi bi-bar-chart-fill"></i><span class="ms-2">Reportes</span>
-                </a>
+                <?php if ($usuarioRol === 'socio'): ?>
+                    <!-- Opciones para Socio: Directas y al Inicio -->
+                    <a href="dashboard.php?modulo=reportes&action=pagos_socios"
+                        class="<?= (($modulo === 'reportes' || $modulo === 'reportes_pagos_socios') && $action === 'pagos_socios') ? 'active' : '' ?>">
+                        <i class="bi bi-list-ul"></i><span class="ms-2">Rendimientos pagados</span>
+                    </a>
+                    <a href="dashboard.php?modulo=reportes&action=portafolios_inversiones"
+                        class="<?= (($modulo === 'reportes' || $modulo === 'reportes_portafolios_inversiones') && $action === 'portafolios_inversiones') ? 'active' : '' ?>">
+                        <i class="bi bi-wallet2"></i><span class="ms-2">Portafolios de Inversión</span>
+                    </a>
+                <?php elseif ($usuarioRol === 'operador'): ?>
+                        <!-- Opciones para Operador: Solo Préstamos y Pagos -->
+                        <a href="dashboard.php?modulo=prestamos" class="<?= $modulo === 'prestamos' ? 'active' : '' ?>">
+                            <i class="bi bi-cash-coin"></i><span class="ms-2">Préstamos</span>
+                        </a>
+                        <a href="dashboard.php?modulo=pagos" class="<?= $modulo === 'pagos' ? 'active' : '' ?>">
+                            <i class="bi bi-credit-card"></i><span class="ms-2">Pagos</span>
+                        </a>
+                <?php else: ?>
+                    <!-- Menú estándar para Admin/Operador -->
+                    <a href="dashboard.php" class="<?= $modulo === 'inicio' ? 'active' : '' ?>">
+                        <i class="bi bi-house-door"></i><span class="ms-2">Inicio</span>
+                    </a>
+                    <a href="dashboard.php?modulo=consecutivos" class="<?= $modulo === 'consecutivos' ? 'active' : '' ?>">
+                        <i class="bi bi-hash"></i><span class="ms-2">Consecutivos</span>
+                    </a>
+                    <a href="dashboard.php?modulo=usuarios" class="<?= $modulo === 'usuarios' ? 'active' : '' ?>">
+                        <i class="bi bi-person-lines-fill"></i><span class="ms-2">Usuarios</span>
+                    </a>
+                    <a href="dashboard.php?modulo=socios" class="<?= $modulo === 'socios' ? 'active' : '' ?>">
+                        <i class="bi bi-piggy-bank"></i><span class="ms-2">Socios</span>
+                    </a>
+                    <a href="dashboard.php?modulo=deudores" class="<?= $modulo === 'deudores' ? 'active' : '' ?>">
+                        <i class="bi bi-people-fill"></i><span class="ms-2">Acreedores</span>
+                    </a>
+                    <a href="dashboard.php?modulo=prestamos" class="<?= $modulo === 'prestamos' ? 'active' : '' ?>">
+                        <i class="bi bi-cash-coin"></i><span class="ms-2">Préstamos</span>
+                    </a>
+                    <a href="dashboard.php?modulo=pagos" class="<?= $modulo === 'pagos' ? 'active' : '' ?>">
+                        <i class="bi bi-credit-card"></i><span class="ms-2">Pagos</span>
+                    </a>
+
+                    <a href="dashboard.php?modulo=reportes" class="<?= $modulo === 'reportes' ? 'active' : '' ?>">
+                        <i class="bi bi-file-earmark-bar-graph"></i><span class="ms-2">Reportes</span>
+                    </a>
+                    <div class="collapse <?= $modulo === 'reportes' ? 'show' : '' ?> sidebar-submenu" id="submenuReportes">
+                        <a href="dashboard.php?modulo=reportes&action=nuevo_pago_socio"
+                            class="<?= ($modulo === 'reportes' && ($action === 'nuevo_pago_socio')) ? 'fw-bold text-white' : '' ?>">
+                            <i class="bi bi-plus-circle"></i><span class="ms-2">Liquidar Rendimientos</span>
+                        </a>
+                        <a href="dashboard.php?modulo=reportes&action=pagos_socios"
+                            class="<?= ($modulo === 'reportes' && ($action === 'pagos_socios')) ? 'fw-bold text-white' : '' ?>">
+                            <i class="bi bi-list-ul"></i><span class="ms-2">Rendimientos pagados</span>
+                        </a>
+                        <a href="dashboard.php?modulo=reportes&action=portafolios_inversiones"
+                            class="<?= ($modulo === 'reportes' && ($action === 'portafolios_inversiones')) ? 'fw-bold text-white' : '' ?>">
+                            <i class="bi bi-wallet2"></i><span class="ms-2">Portafolios de Inversión</span>
+                        </a>
+                        <a href="dashboard.php?modulo=reportes&action=reporte_general_prestamos"
+                            class="<?= ($modulo === 'reportes' && ($action === 'reporte_general_prestamos')) ? 'fw-bold text-white' : '' ?>">
+                            <i class="bi bi-file-earmark-bar-graph"></i><span class="ms-2">Reporte Gral Préstamos</span>
+                        </a>
+                        <a href="dashboard.php?modulo=reportes&action=reporte_general_pagos"
+                            class="<?= ($modulo === 'reportes' && ($action === 'reporte_general_pagos')) ? 'fw-bold text-white' : '' ?>">
+                            <i class="bi bi-cash-stack"></i><span class="ms-2">Reporte Gral Pagos</span>
+                        </a>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <hr>
-            <a href="#" class="btn-logout">
+            <a h ref="#" class="btn-logout">
                 <i class="bi bi-box-arrow-left"></i><span class="ms-2">Cerrar sesión</span>
             </a>
         </div>
@@ -274,27 +363,33 @@ $content = ob_get_clean();
 
                 <div class="d-flex align-items-center">
                     <!-- ⭐ BOTÓN COLAPSAR -->
-                    <button class="btn btn-outline-secondary btn-sm me-3" id="toggleSidebar">
+                    <but ton class="btn btn-outline-secondary btn-sm me-3" id="toggleSidebar">
                         <i class="bi bi-list"></i>
-                    </button>
+                        </button>
 
-                    <!-- ⭐ THEME TOGGLE -->
-                    <div class="theme-toggle-btn btn border-0" id="themeToggle" title="Cambiar tema">
-                        <i class="bi bi-sun-fill d-none" id="theme-icon-light"></i>
-                        <i class="bi bi-moon-stars-fill" id="theme-icon-dark"></i>
-                    </div>
+                        <!-- ⭐ THEME TOGGLE -->
+                        <div class="theme-toggle-btn btn border-0" id="themeToggle" title="Cambiar tema">
+                            <i class="bi bi-sun-fill d-none" id="theme-icon-light"></i>
+                            <i class="bi bi-moon-stars-fill" id="theme-icon-dark"></i>
+                        </div>
                 </div>
 
                 <!-- ⭐ DROPDOWN PERFIL -->
                 <div class="dropdown">
-                    <a href="#" data-bs-toggle="dropdown" class="d-flex align-items-center text-decoration-none">
+                    <a h ref="#" data-bs-toggle="dropdown" class="d-flex align-items-center text-decoration-none">
                         <img src="<?= $avatarUrl ?>" width="40" height="40" class="rounded-circle me-2">
-                        <strong class="text-body d-none d-sm-inline"><?= htmlspecialchars($usuarioNombre) ?></strong>
+                        <div class="d-none d-sm-flex flex-column text-start">
+                            <strong class="text-body lh-1"><?= htmlspecialchars($usuarioNombre) ?></strong>
+                            <sma ll class="text-muted" style="font-size: 0.75rem;">
+                                <?= ucfirst(htmlspecialchars($usuarioRol)) ?></small>
+                        </div>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow">
+
                         <li class="dropdown-header text-uppercase small fw-bold"><?= htmlspecialchars($usuarioRol) ?>
                         </li>
                         <li>
+
                             <a class="dropdown-item" href="dashboard.php?modulo=usuarios/editar&id=<?= $usuarioId ?>">
                                 <i class="bi bi-person-gear me-2"></i>Mi Perfil
                             </a>

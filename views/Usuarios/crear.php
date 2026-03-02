@@ -37,6 +37,7 @@ $baseURL = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://{$_SERVER['HTTP_H
                     <select name="rol" id="rol" class="form-select" required>
                         <option value="">Seleccione</option>
                         <option value="admin">Administrador</option>
+                        <option value="socio">Socio</option>
                         <option value="operador">Operador</option>
                     </select>
                 </div>
@@ -61,6 +62,19 @@ $baseURL = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://{$_SERVER['HTTP_H
         </form>
     </div>
 </div>
+
+<?php if (isset($_GET['error']) && $_GET['error'] === 'email_duplicado'): ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            Swal.fire({
+                icon: 'error',
+                title: 'Correo duplicado',
+                text: 'El correo electrónico ya existe asociado a otro usuario activo.',
+                confirmButtonColor: '#0d6efd'
+            });
+        });
+    </script>
+<?php endif; ?>
 
 <script>
     // Mostrar/ocultar contraseña

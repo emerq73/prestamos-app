@@ -10,16 +10,23 @@ $estadoFiltro = $_GET['estado'] ?? 'todos';
             <i class="bi bi-cash-coin me-2"></i> Préstamos
         </h3>
 
-        <div class="d-flex align-items-center">
-            <label class="me-2 mb-0 small fw-bold">Filtrar:</label>
-            <select class="form-select form-select-sm me-3" style="width: 150px"
-                onchange="location.href='dashboard.php?modulo=prestamos&estado=' + this.value">
-                <option value="todos" <?= $estadoFiltro === 'todos' ? 'selected' : '' ?>>Todos</option>
-                <option value="activo" <?= $estadoFiltro === 'activo' ? 'selected' : '' ?>>Activos</option>
-                <option value="cancelado" <?= $estadoFiltro === 'cancelado' ? 'selected' : '' ?>>Cancelados</option>
-            </select>
+        <div class="d-flex align-items-center gap-3">
+            <div class="input-group input-group-sm" style="width: 250px;">
+                <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" id="buscarAcreedor" class="form-control" placeholder="Buscar por acreedor...">
+            </div>
 
-            <a href="dashboard.php?modulo=prestamos/crear" class="btn btn-primary">
+            <div class="d-flex align-items-center">
+                <label class="me-2 mb-0 small fw-bold">Estado:</label>
+                <select class="form-select form-select-sm" style="width: 150px"
+                    onchange="location.href='dashboard.php?modulo=prestamos&estado=' + this.value">
+                    <option value="todos" <?= $estadoFiltro === 'todos' ? 'selected' : '' ?>>Todos</option>
+                    <option value="activo" <?= $estadoFiltro === 'activo' ? 'selected' : '' ?>>Activos</option>
+                    <option value="cancelado" <?= $estadoFiltro === 'cancelado' ? 'selected' : '' ?>>Cancelados</option>
+                </select>
+            </div>
+
+            <a href="dashboard.php?modulo=prestamos/crear" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-circle me-1"></i> Nuevo préstamo
             </a>
         </div>
@@ -65,7 +72,8 @@ $estadoFiltro = $_GET['estado'] ?? 'todos';
                         <thead class="table-primary">
                             <tr>
                                 <th>ID</th>
-                                <th>Deudor</th>
+                                <th>N° Préstamo</th>
+                                <th>Acreedor</th>
                                 <th>Monto</th>
                                 <th>Interés</th>
                                 <th>Plazo</th>
@@ -75,11 +83,12 @@ $estadoFiltro = $_GET['estado'] ?? 'todos';
                             </tr>
                         </thead>
 
-                        <tbody>
+                        <tbody id="tablaPrestamos">
                             <?php foreach ($prestamos as $p): ?>
                                 <tr>
                                     <td><?= $p['id'] ?></td>
-                                    <td><?= htmlspecialchars($p['deudor_nombre']) ?></td>
+                                    <td><span class="badge bg-secondary"><?= $p['consecutivo'] ?? 'N/A' ?></span></td>
+                                    <td class="nombre-acreedor"><?= htmlspecialchars($p['deudor_nombre']) ?></td>
                                     <td>
                                         <span class="fw-bold text-success">
                                             $ <?= number_format($p['monto'], 0, ',', '.') ?>
@@ -121,9 +130,23 @@ $estadoFiltro = $_GET['estado'] ?? 'todos';
 </div>
 
 <script>
+    // Lógica para buscar por acreedor en tiempo real
+    document.getElementById('buscarAcreedor').addEventListener('keyup', function () {
+        const busqueda = this.value.toLowerCase();
+        const filas = document.querySelectorAll('#tablaPrestamos tr');
+
+        filas.forEach(fila => {
+            const nombre = fila.querySelector('.nombre-acreedor').textContent.toLowerCase();
+            if (nombre.includes(busqueda)) {
+                fila.style.display = '';
+            } else {
+                fila.style.display = 'none';
+            }
+        });
+    });
+
     // Eliminar préstamo con SweetAlert
     document.querySelectorAll('.btn-eliminar').forEach(btn => {
-
         btn.addEventListener('click', function () {
             let prestamoID = this.dataset.id;
 

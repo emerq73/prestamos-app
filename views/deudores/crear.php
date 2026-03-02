@@ -4,7 +4,7 @@ $baseURL = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://{$_SERVER['HTTP_H
 
 <div class="card shadow">
     <div class="card-header bg-primary text-white">
-        <i class="bi bi-person-plus me-2"></i> Registrar nuevo deudor
+        <i class="bi bi-person-plus me-2"></i> Registrar nuevo acreedor
     </div>
 
     <div class="card-body">
@@ -63,7 +63,7 @@ $baseURL = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://{$_SERVER['HTTP_H
                     <i class="bi bi-arrow-left"></i> Cancelar
                 </a>
                 <button type="submit" class="btn btn-success">
-                    <i class="bi bi-check-circle"></i> Guardar deudor
+                    <i class="bi bi-check-circle"></i> Guardar acreedor
                 </button>
             </div>
         </form>

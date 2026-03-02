@@ -69,7 +69,7 @@ $html = $style . '
             <b>Documento:</b> ' . htmlspecialchars($pago['deudor_documento']) . '
         </td>
         <td width="40%" align="right">
-            <b>Recibo N°:</b> ' . str_pad($pago['id'], 6, '0', STR_PAD_LEFT) . '<br>
+            <b>Recibo N°:</b> ' . ($pago['consecutivo'] ?? str_pad($pago['id'], 6, '0', STR_PAD_LEFT)) . '<br>
             <b>Fecha:</b> ' . date('d/m/Y H:i', strtotime($pago['fecha'])) . '
         </td>
     </tr>

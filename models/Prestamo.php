@@ -2,6 +2,7 @@
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/PrestamoDetalle.php';
 require_once __DIR__ . '/PrestamoSocioDetalle.php';
+require_once __DIR__ . '/Consecutivo.php';
 
 class Prestamo
 {
@@ -17,10 +18,14 @@ class Prestamo
     // Crear préstamo y devolver id
     public function crear($data)
     {
-        $sql = "INSERT INTO prestamos (deudor_id, monto, tasa_interes, plazo, tipo_tasa, periodo_pago, fecha_inicio, observaciones)
-                VALUES (:deudor_id, :monto, :tasa_interes, :plazo, :tipo_tasa, :periodo_pago, :fecha_inicio, :observaciones)";
+        $consecutivoModel = new Consecutivo($this->conn);
+        $consecutivoStr = $consecutivoModel->obtenerSiguiente('prestamos');
+
+        $sql = "INSERT INTO prestamos (consecutivo, deudor_id, monto, tasa_interes, plazo, tipo_tasa, periodo_pago, fecha_inicio, observaciones)
+                VALUES (:consecutivo, :deudor_id, :monto, :tasa_interes, :plazo, :tipo_tasa, :periodo_pago, :fecha_inicio, :observaciones)";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([
+            ':consecutivo' => $consecutivoStr,
             ':deudor_id' => $data['deudor_id'],
             ':monto' => $data['monto'],
             ':tasa_interes' => $data['tasa_interes'],

@@ -52,6 +52,21 @@ class Usuario
         return $stmt->execute($params);
     }
 
+    public function emailExisteActivo($email, $idExcluir = null)
+    {
+        $sql = "SELECT COUNT(*) FROM usuarios WHERE email = ? AND estado = 'activo'";
+        $params = [$email];
+
+        if ($idExcluir) {
+            $sql .= " AND id != ?";
+            $params[] = $idExcluir;
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchColumn() > 0;
+    }
+
     public function eliminar($id)
     {
         $stmt = $this->db->prepare("DELETE FROM usuarios WHERE id = ?");

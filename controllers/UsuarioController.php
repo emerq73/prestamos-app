@@ -28,22 +28,29 @@ class UsuarioController
         }
     } */
 
-        public function crear()
-{
-    // 👉 SI ES POST: guardar
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        if (!Csrf::validate($_POST['csrf_token'] ?? '')) {
-            die('CSRF Error');
+    public function crear()
+    {
+        // 👉 SI ES POST: guardar
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!Csrf::validate($_POST['csrf_token'] ?? '')) {
+                die('CSRF Error');
+            }
+
+            // Validar email único si está activo
+            if ($_POST['estado'] === 'activo' && $this->usuarioModel->emailExisteActivo($_POST['email'])) {
+                header("Location: dashboard.php?modulo=usuarios&action=crear&error=email_duplicado");
+                exit;
+            }
+
+            $this->usuarioModel->crear($_POST);
+            header("Location: dashboard.php?modulo=usuarios&exito=creado");
+            exit;
         }
 
-        $this->usuarioModel->crear($_POST);
-        header("Location: dashboard.php?modulo=usuarios&exito=creado");
-        exit;
+        // 👉 SI ES GET: mostrar formulario
+        $csrf_token = Csrf::getToken();
+        require_once __DIR__ . '/../views/usuarios/crear.php';
     }
-
-    // 👉 SI ES GET: mostrar formulario
-    require_once __DIR__ . '/../views/usuarios/crear.php';
-}
 
 
     public function editar()
@@ -52,6 +59,13 @@ class UsuarioController
             if (!Csrf::validate($_POST['csrf_token'] ?? '')) {
                 die('CSRF Error');
             }
+
+            // Validar email único si está activo
+            if ($_POST['estado'] === 'activo' && $this->usuarioModel->emailExisteActivo($_POST['email'], $_POST['id'])) {
+                header("Location: dashboard.php?modulo=usuarios/editar&id=" . $_POST['id'] . "&error=email_duplicado");
+                exit;
+            }
+
             $this->usuarioModel->actualizar($_POST['id'], $_POST);
             header("Location: dashboard.php?modulo=usuarios&exito=editado");
             exit;

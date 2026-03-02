@@ -45,6 +45,7 @@ $usuario = $usuarioModel->obtenerPorId($id);
                     <label class="form-label">Rol</label>
                     <select name="rol" class="form-select" required>
                         <option value="admin" <?= $usuario['rol'] == "admin" ? 'selected' : '' ?>>Administrador</option>
+                        <option value="socio" <?= $usuario['rol'] == "socio" ? 'selected' : '' ?>>Socio</option>
                         <option value="operador" <?= $usuario['rol'] == "operador" ? 'selected' : '' ?>>Operador</option>
                     </select>
                 </div>
@@ -70,44 +71,56 @@ $usuario = $usuarioModel->obtenerPorId($id);
     </div>
 </div>
 <script>
-    const form = document.querySelector('form');
-    const btnGuardar = document.getElementById('btn-guardar');
+    <?php if (isset($_GET['error']) && $_GET['error'] === 'email_duplicado'): ?>
+            < script >
+            document.addEventListener('DOMContentLoaded', function () {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Correo duplicado',
+                    text: 'El correo electrónico ya existe asociado a otro usuario activo.',
+                    confirmButtonColor: '#0d6efd'
+                });
+            });
+    </script>
+<?php endif; ?>
+const form = document.querySelector('form');
+const btnGuardar = document.getElementById('btn-guardar');
 
-    // Almacenar valores iniciales
-    const initialValues = {};
-    const inputs = form.querySelectorAll('input, select, textarea');
+// Almacenar valores iniciales
+const initialValues = {};
+const inputs = form.querySelectorAll('input, select, textarea');
 
-    inputs.forEach(input => {
-        if (input.type !== 'hidden' && input.type !== 'submit') {
-            initialValues[input.name] = input.value;
-        }
-    });
+inputs.forEach(input => {
+if (input.type !== 'hidden' && input.type !== 'submit') {
+initialValues[input.name] = input.value;
+}
+});
 
-    // Función para verificar cambios
-    const checkChanges = () => {
-        let hasChanges = false;
-        inputs.forEach(input => {
-            if (input.type !== 'hidden' && input.type !== 'submit') {
-                if (input.value !== initialValues[input.name]) {
-                    hasChanges = true;
-                }
-            }
-        });
-        btnGuardar.disabled = !hasChanges;
-    };
+// Función para verificar cambios
+const checkChanges = () => {
+let hasChanges = false;
+inputs.forEach(input => {
+if (input.type !== 'hidden' && input.type !== 'submit') {
+if (input.value !== initialValues[input.name]) {
+hasChanges = true;
+}
+}
+});
+btnGuardar.disabled = !hasChanges;
+};
 
-    // Listeners para detectar cambios
-    inputs.forEach(input => {
-        input.addEventListener('input', checkChanges);
-        input.addEventListener('change', checkChanges);
-    });
+// Listeners para detectar cambios
+inputs.forEach(input => {
+input.addEventListener('input', checkChanges);
+input.addEventListener('change', checkChanges);
+});
 
-    document.querySelectorAll('.toggle-password').forEach(icon => {
-        icon.addEventListener('click', () => {
-            const input = icon.closest('.input-group').querySelector('input');
-            input.type = input.type === 'password' ? 'text' : 'password';
-            icon.classList.toggle('bi-eye');
-            icon.classList.toggle('bi-eye-slash');
-        });
-    });
+document.querySelectorAll('.toggle-password').forEach(icon => {
+icon.addEventListener('click', () => {
+const input = icon.closest('.input-group').querySelector('input');
+input.type = input.type === 'password' ? 'text' : 'password';
+icon.classList.toggle('bi-eye');
+icon.classList.toggle('bi-eye-slash');
+});
+});
 </script>

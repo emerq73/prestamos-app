@@ -56,8 +56,10 @@ $estadoFiltro = $_GET['estado'] ?? 'todos';
 
 <!-- SweetAlert para Pago Exitoso -->
 <?php if (isset($_GET['msg']) && $_GET['msg'] === 'pago_ok'): ?>
-    <script>     document.addEventListener('DOMContentLoaded', function () {         let tipo = '<?= $_GET['tipo'] ?? 'pago' ?>';         let texto = '';         if (tipo === 'cuota') texto = 'Pago de cuota registrado exitosamente.';         else if (tipo === 'interes') texto = 'Pago de intereses registrado. Se ha generado una nueva cuota al final.';         else if (tipo === 'total') texto = 'Pago total registrado. ¡Préstamo cancelado!';         else texto = 'Pago registrado exitosamente.';
-             Swal.fire({             icon: 'success',             title: '¡Pago Exitoso!',             text: texto,             confirmButtonColor: '#198754'         });     });
+    <script>     document.addEventListener('DOMContentLoaded', function () {
+            let tipo = '<?= $_GET['tipo'] ?? 'pago' ?>'; let texto = ''; if (tipo === 'cuota') texto = 'Pago de cuota registrado exitosamente.'; else if (tipo === 'interes') texto = 'Pago de intereses registrado. Se ha generado una nueva cuota al final.'; else if (tipo === 'total') texto = 'Pago total registrado. ¡Préstamo cancelado!'; else texto = 'Pago registrado exitosamente.';
+            Swal.fire({ icon: 'success', title: '¡Pago Exitoso!', text: texto, confirmButtonColor: '#198754' });
+        });
     </script>
 <?php endif; ?>
 
@@ -71,16 +73,23 @@ if ($prestamoId <= 0) {
 
     $prestamos = $prestamoModel->obtenerTodos($estadoFiltro);
     ?>
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3><i class="bi bi-credit-card"></i> Módulo de Pagos</h3>
-        <div class="d-flex align-items-center">
-            <label class="me-2 mb-0 small">Filtrar:</label>
-            <select class="form-select form-select-sm" style="width: 130px"
-                onchange="location.href='dashboard.php?modulo=pagos&estado=' + this.value">
-                <option value="todos" <?= $estadoFiltro === 'todos' ? 'selected' : '' ?>>Todos</option>
-                <option value="activo" <?= $estadoFiltro === 'activo' ? 'selected' : '' ?>>Activos</option>
-                <option value="cancelado" <?= $estadoFiltro === 'cancelado' ? 'selected' : '' ?>>Cancelados</option>
-            </select>
+    <div class="d-flex justify-content-between align-items-center mb-3 text-wrap">
+        <h3 class="mb-0"><i class="bi bi-credit-card"></i> Módulo de Pagos</h3>
+        <div class="d-flex align-items-center gap-3">
+            <div class="input-group input-group-sm" style="width: 250px;">
+                <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" id="buscarAcreedor" class="form-control" placeholder="Buscar por acreedor...">
+            </div>
+
+            <div class="d-flex align-items-center">
+                <label class="me-2 mb-0 small fw-bold">Estado:</label>
+                <select class="form-select form-select-sm" style="width: 130px"
+                    onchange="location.href='dashboard.php?modulo=pagos&estado=' + this.value">
+                    <option value="todos" <?= $estadoFiltro === 'todos' ? 'selected' : '' ?>>Todos</option>
+                    <option value="activo" <?= $estadoFiltro === 'activo' ? 'selected' : '' ?>>Activos</option>
+                    <option value="cancelado" <?= $estadoFiltro === 'cancelado' ? 'selected' : '' ?>>Cancelados</option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -93,16 +102,17 @@ if ($prestamoId <= 0) {
                 <thead class="table-light">
                     <tr>
                         <th>ID</th>
-                        <th>Deudor</th>
+                        <th>N° Préstamo</th>
+                        <th>Acreedor</th>
                         <th>Monto</th>
                         <th>Estado</th>
                         <th></th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tablaPrestamosPagos">
                     <?php if (empty($prestamos)): ?>
                         <tr>
-                            <td colspan="5" class="text-center text-muted">
+                            <td colspan="6" class="text-center text-muted">
                                 No hay préstamos registrados
                             </td>
                         </tr>
@@ -111,7 +121,8 @@ if ($prestamoId <= 0) {
                     <?php foreach ($prestamos as $p): ?>
                         <tr>
                             <td><?= $p['id'] ?></td>
-                            <td><?= htmlspecialchars($p['deudor_nombre']) ?></td>
+                            <td><span class="badge bg-info text-dark"><?= $p['consecutivo'] ?? '---' ?></span></td>
+                            <td class="nombre-acreedor"><?= htmlspecialchars($p['deudor_nombre']) ?></td>
                             <td>$<?= number_format($p['monto'], 2) ?></td>
                             <td>
                                 <span
@@ -136,6 +147,24 @@ if ($prestamoId <= 0) {
             </table>
         </div>
     </div>
+    <script>
+        // Lógica para buscar por acreedor en tiempo real (en la lista de préstamos)
+        const inputBuscar = document.getElementById('buscarAcreedor');
+        if (inputBuscar) {
+            inputBuscar.addEventListener('keyup', function () {
+                const busqueda = this.value.toLowerCase();
+                const filas = document.querySelectorAll('#tablaPrestamosPagos tr');
+
+                filas.forEach(fila => {
+                    const celdaNombre = fila.querySelector('.nombre-acreedor');
+                    if (celdaNombre) {
+                        const nombre = celdaNombre.textContent.toLowerCase();
+                        fila.style.display = nombre.includes(busqueda) ? '' : 'none';
+                    }
+                });
+            });
+        }
+    </script>
     <?php
     return;
 }
@@ -156,7 +185,13 @@ $pagos = $pagoModel->obtenerPagosPorPrestamo($prestamoId);
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3>Pagos del Préstamo #<?= $prestamoId ?> - Historial</h3>
+    <h3>Pagos del Préstamo
+        <?php if (!empty($prestamo['consecutivo'])): ?>
+            <span class="ms-2 badge bg-info text-dark"><?= $prestamo['consecutivo'] ?></span>
+        <?php else: ?>
+            #<?= $prestamoId ?>
+        <?php endif; ?>
+    </h3>
     <div>
         <a href="dashboard.php?modulo=pagos" class="btn btn-secondary me-2">
             <i class="bi bi-arrow-left"></i> Volver a Pagos
@@ -170,7 +205,7 @@ $pagos = $pagoModel->obtenerPagosPorPrestamo($prestamoId);
 <div class="card mb-3">
     <div class="card-body">
         <div class="row">
-            <div class="col-md-4"><b>Deudor:</b> <?= htmlspecialchars($prestamo['deudor_nombre']) ?></div>
+            <div class="col-md-4"><b>Acreedor:</b> <?= htmlspecialchars($prestamo['deudor_nombre']) ?></div>
             <div class="col-md-4"><b>Monto:</b> $<?= number_format($prestamo['monto'], 2) ?></div>
             <div class="col-md-4">
                 <b>Estado:</b>
@@ -187,11 +222,13 @@ $pagos = $pagoModel->obtenerPagosPorPrestamo($prestamoId);
     <table class="table table-bordered table-sm">
         <thead class="table-light">
             <tr>
-                <th>#</th>
+                <th>ID</th>
+                <th>N° Recibo</th>
                 <th>Fecha</th>
                 <th>Tipo</th>
                 <th>Monto</th>
                 <th>Método</th>
+                <th>Ref</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -207,6 +244,7 @@ $pagos = $pagoModel->obtenerPagosPorPrestamo($prestamoId);
             <?php foreach ($pagos as $p): ?>
                 <tr>
                     <td><?= $p['id'] ?></td>
+                    <td><span class="badge bg-info text-dark"><?= $p['consecutivo'] ?? '---' ?></span></td>
                     <td><?= date('Y-m-d H:i', strtotime($p['fecha'])) ?></td>
                     <td>
                         <span class="badge bg-secondary">

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/Consecutivo.php';
 
 class Pago
 {
@@ -31,8 +32,11 @@ class Pago
         try {
             $this->db->beginTransaction();
 
-            $stmt = $this->db->prepare("INSERT INTO pagos (prestamo_id, fecha, monto_total, tipo, metodo_pago, referencia) VALUES (?, NOW(), ?, ?, ?, ?)");
-            $stmt->execute([$prestamoId, $montoTotal, $tipo, $metodo, $referencia]);
+            $consecutivoModel = new Consecutivo($this->db);
+            $consecutivoStr = $consecutivoModel->obtenerSiguiente('pagos');
+
+            $stmt = $this->db->prepare("INSERT INTO pagos (consecutivo, prestamo_id, fecha, monto_total, tipo, metodo_pago, referencia) VALUES (?, ?, NOW(), ?, ?, ?, ?)");
+            $stmt->execute([$consecutivoStr, $prestamoId, $montoTotal, $tipo, $metodo, $referencia]);
             $pagoId = $this->db->lastInsertId();
 
             $pagoItemStmt = $this->db->prepare("INSERT INTO pago_items (pago_id, prestamos_detalle_id, monto_capital, monto_interes) VALUES (?, ?, ?, ?)");
@@ -294,9 +298,12 @@ class Pago
         try {
             $this->db->beginTransaction();
 
+            $consecutivoModel = new Consecutivo($this->db);
+            $consecutivoStr = $consecutivoModel->obtenerSiguiente('pagos');
+
             // 1. Crear el registro del pago global
-            $stmt = $this->db->prepare("INSERT INTO pagos (prestamo_id, fecha, monto_total, tipo, metodo_pago, referencia) VALUES (?, NOW(), ?, 'total', ?, ?)");
-            $stmt->execute([$prestamoId, $liq['total'], $metodo, $referencia]);
+            $stmt = $this->db->prepare("INSERT INTO pagos (consecutivo, prestamo_id, fecha, monto_total, tipo, metodo_pago, referencia) VALUES (?, ?, NOW(), ?, 'total', ?, ?)");
+            $stmt->execute([$consecutivoStr, $prestamoId, $liq['total'], $metodo, $referencia]);
             $pagoId = $this->db->lastInsertId();
 
             // 2. Liquidar todas las cuotas pendientes

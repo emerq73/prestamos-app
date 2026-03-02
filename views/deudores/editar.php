@@ -18,7 +18,7 @@ $documentos = $docModel->obtenerPorDeudor($id);
 
 <div class="card shadow">
     <div class="card-header bg-warning text-dark">
-        <i class="bi bi-pencil-square me-2"></i> Editar deudor
+        <i class="bi bi-pencil-square me-2"></i> Editar acreedor
     </div>
     <div class="card-body">
         <form action="dashboard.php?modulo=deudores&action=editar" method="POST" enctype="multipart/form-data"

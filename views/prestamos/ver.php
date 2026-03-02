@@ -21,7 +21,12 @@ $socios = $prestamoSocioModel->obtenerPorPrestamo($id);
 <div class="mb-3 d-flex justify-content-between align-items-center">
     <h4 class="fw-bold">
         <i class="bi bi-cash-stack me-2"></i>
-        Préstamo #<?= $prestamo['id'] ?>
+        Préstamo
+        <?php if (!empty($prestamo['consecutivo'])): ?>
+            <span class="ms-2 badge bg-info text-dark"><?= $prestamo['consecutivo'] ?></span>
+        <?php else: ?>
+            #<?= $prestamo['id'] ?>
+        <?php endif; ?>
     </h4>
 
     <div>
@@ -42,7 +47,7 @@ $socios = $prestamoSocioModel->obtenerPorPrestamo($id);
 <!-- Información del deudor -->
 <div class="card mb-4 shadow-sm">
     <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="bi bi-person-vcard me-2"></i>Información del Deudor</h5>
+        <h5 class="mb-0"><i class="bi bi-person-vcard me-2"></i>Información del Acreedor</h5>
     </div>
 
     <div class="card-body">
@@ -51,9 +56,9 @@ $socios = $prestamoSocioModel->obtenerPorPrestamo($id);
             <!-- Columna izquierda -->
             <div class="col-md-6">
                 <ul class="list-group list-group-flush">
-                    <li class="list-group-item px-0"><strong>ID Deudor:</strong>
+                    <li class="list-group-item px-0"><strong>ID Acreedor:</strong>
                         <?= htmlspecialchars($prestamo['deudor_id']) ?></li>
-                    <li class="list-group-item px-0"><strong>Nombre Deudor:</strong>
+                    <li class="list-group-item px-0"><strong>Nombre Acreedor:</strong>
                         <?= htmlspecialchars($prestamo['deudor_nombre']) ?></li>
                     <li class="list-group-item px-0"><strong>Documento:</strong>
                         <?= htmlspecialchars($prestamo['deudor_documento']) ?></li>

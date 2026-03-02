@@ -3,9 +3,9 @@
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4><i class="bi bi-people-fill me-2"></i> Deudores</h4>
+    <h4><i class="bi bi-people-fill me-2"></i> Acreedores</h4>
     <a href="dashboard.php?modulo=deudores/crear" class="btn btn-success">
-        <i class="bi bi-plus-circle me-1"></i> Nuevo deudor
+        <i class="bi bi-plus-circle me-1"></i> Nuevo acreedor
     </a>
 </div>
 
@@ -46,7 +46,7 @@
                 <?php endforeach; ?>
             <?php else: ?>
                 <tr>
-                    <td colspan="6" class="text-center text-muted">No hay deudores registrados.</td>
+                    <td colspan="6" class="text-center text-muted">No hay acreedores registrados.</td>
                 </tr>
             <?php endif; ?>
         </tbody>
@@ -59,13 +59,13 @@
         let m = '';
         switch ('<?= $_GET['exito'] ?>') {
             case 'creado':
-                m = 'Deudor registrado correctamente';
+                m = 'Acreedor registrado correctamente';
                 break;
             case 'editado':
-                m = 'Deudor actualizado con éxito';
+                m = 'Acreedor actualizado con éxito';
                 break;
             case 'eliminado':
-                m = 'Deudor eliminado correctamente';
+                m = 'Acreedor eliminado correctamente';
                 break;
         }
         if (m) {
@@ -85,7 +85,7 @@
         Swal.fire({
             icon: 'error',
             title: 'No se puede eliminar',
-            text: 'Este deudor tiene préstamos en ejecución',
+            text: 'Este acreedor tiene préstamos en ejecución',
             confirmButtonColor: '#d33'
         });
     </script>
@@ -99,7 +99,7 @@
         btn.addEventListener('click', function () {
             const id = this.dataset.id;
             Swal.fire({
-                title: '¿Eliminar deudor?',
+                title: '¿Eliminar acreedor?',
                 text: 'Esta acción no se puede deshacer',
                 icon: 'warning',
                 showCancelButton: true,

@@ -42,11 +42,11 @@ $socios = $socioModel->obtenerTodos();
             <!-- DATOS DEL DEUDOR -->
             <!-- ======================= -->
             <div class="card mb-4">
-                <div class="card-header bg-primary text-white">Datos del Deudor</div>
+                <div class="card-header bg-primary text-white">Datos del Acreedor</div>
                 <div class="card-body">
 
                     <div class="mb-3">
-                        <label class="form-label">Seleccione Deudor</label>
+                        <label class="form-label">Seleccione Acreedor</label>
                         <select name="deudor_id" class="form-select" required>
                             <option value="">Seleccione...</option>
                             <?php foreach ($deudores as $d): ?>

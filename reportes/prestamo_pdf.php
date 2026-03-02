@@ -17,6 +17,7 @@ $ciudad = 'Bogotá';
 // --------------------------------
 class MYPDF extends TCPDF
 {
+    public $consecutivo = '';
 
     public function Header()
     {
@@ -30,7 +31,9 @@ class MYPDF extends TCPDF
         $this->SetFont('helvetica', 'B', 14);
         $this->SetTextColor(0, 51, 102); // Azul oscuro
         $this->SetXY(45, 12);
-        $this->Cell(0, 10, 'DETALLE DE PRÉSTAMO', 0, false, 'C');
+
+        $consecText = $this->consecutivo ? ' - ' . $this->consecutivo : '';
+        $this->Cell(0, 10, 'DETALLE DE PRÉSTAMO' . $consecText, 0, false, 'C');
 
         $this->SetDrawColor(0, 51, 102); // Azul oscuro para la línea
         $this->Line(15, 28, 200, 28);
@@ -75,7 +78,8 @@ if (!$prestamo) {
 $pdf = new MYPDF('P', 'mm', 'Letter', true, 'UTF-8', false);
 $pdf->SetCreator('Sistema de Préstamos');
 $pdf->SetAuthor($usuarioGenera);
-$pdf->SetTitle('Detalle del Préstamo');
+$pdf->consecutivo = $prestamo['consecutivo'] ?? '';
+$pdf->SetTitle('Detalle del Préstamo ' . $pdf->consecutivo);
 
 $pdf->SetMargins(15, 35, 15);
 $pdf->SetAutoPageBreak(true, 25);
@@ -118,7 +122,7 @@ td {
 // DATOS DEUDOR
 // --------------------------------
 $html .= '
-<div class="subtitulo">Datos del Deudor</div>
+<div class="subtitulo">Datos del Acreedor</div>
 <table>
 <tr><td><b>Nombre</b></td><td>' . $deudor['nombre_completo'] . '</td></tr>
 <tr><td><b>Documento</b></td><td>' . $deudor['documento'] . '</td></tr>
@@ -133,7 +137,7 @@ $html .= '
 $html .= '
 <div class="subtitulo">Datos del Préstamo</div>
 <table>
-<tr><td><b>ID</b></td><td>' . $prestamo['id'] . '</td></tr>
+<tr><td><b>Consecutivo</b></td><td>' . ($prestamo['consecutivo'] ?? 'N/A') . '</td></tr>
 <tr><td><b>Monto</b></td><td>$' . number_format($prestamo['monto'], 2) . '</td></tr>
 <tr><td><b>Interés</b></td><td>' . $prestamo['tasa_interes'] . '%</td></tr>
 <tr><td><b>Plazo</b></td><td>' . $prestamo['plazo'] . '</td></tr>

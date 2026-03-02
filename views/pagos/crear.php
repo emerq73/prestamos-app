@@ -34,7 +34,7 @@ $datosLiq = $pagoModel->calcularLiquidacionTotal($prestamoId);
     <div class="card mb-3">
         <div class="card-body">
             <h5>Datos del Préstamo</h5>
-            <p><b>Deudor:</b> <?= htmlspecialchars($prestamo['deudor_nombre']) ?></p>
+            <p><b>Acreedor:</b> <?= htmlspecialchars($prestamo['deudor_nombre']) ?></p>
             <p><b>Monto:</b> $<?= number_format($prestamo['monto'], 2) ?></p>
             <p><b>Estado:</b> <?= strtoupper($prestamo['estado'] ?? 'activo') ?></p>
         </div>
@@ -136,7 +136,7 @@ $datosLiq = $pagoModel->calcularLiquidacionTotal($prestamoId);
             </div>
             <div class="alert alert-info mt-3 py-2 small mb-0">
                 <i class="bi bi-info-circle"></i> Al procesar este pago, el préstamo se marcará automáticamente como
-                <b>FINALIZADO</b>.
+                <b>CANCELADO</b>.
             </div>
         </div>
     </div>
