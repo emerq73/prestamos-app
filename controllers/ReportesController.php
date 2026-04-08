@@ -184,4 +184,78 @@ class ReportesController
         }
         exit;
     }
+
+    public function subir_evidencia_pago()
+    {
+        header('Content-Type: application/json');
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                throw new Exception("Método no permitido");
+            }
+
+            $id = $_POST['pago_socio_id'] ?? null;
+            if (!$id || empty($_FILES['evidencia']['name'])) {
+                throw new Exception("Faltan datos o archivo");
+            }
+
+            $pago = $this->pagoSocioModel->obtenerPorId($id);
+            if (!$pago) {
+                throw new Exception("Registro de pago no encontrado");
+            }
+
+            require_once __DIR__ . '/../includes/GoogleDrive.php';
+            $drive = new GoogleDrive();
+            
+            $file = $_FILES['evidencia'];
+            $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+            $nombreArchivo = "EVIDENCIA-PAGO-" . $pago['consecutivo'] . "-" . date('Y-m-d') . "." . $ext;
+            
+            // Usar la carpeta de pagos configurada
+            $config = require __DIR__ . '/../config/google_drive_config.php';
+            $folderId = $config['folder_id_pagos'] ?? "16OES7LE2dQROoWvQS5yNYvsWHa4k7hVA";
+            $fileId = $drive->subirArchivo($file['tmp_name'], $nombreArchivo, $folderId);
+            
+            if ($fileId) {
+                $this->pagoSocioModel->actualizarEvidencia($id, $fileId);
+                echo json_encode(['success' => true]);
+            } else {
+                throw new Exception("Error al subir el archivo a Google Drive");
+            }
+
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    public function eliminar_evidencia_pago()
+    {
+        header('Content-Type: application/json');
+        try {
+            $id = $_GET['id'] ?? null;
+            if (!$id) {
+                throw new Exception("ID no proporcionado");
+            }
+
+            $pago = $this->pagoSocioModel->obtenerPorId($id);
+            if (!$pago || empty($pago['evidencia_pago'])) {
+                throw new Exception("No hay evidencia para eliminar");
+            }
+
+            require_once __DIR__ . '/../includes/GoogleDrive.php';
+            $drive = new GoogleDrive();
+            
+            // Eliminar de Google Drive
+            $drive->eliminarArchivo($pago['evidencia_pago']);
+            
+            // Limpiar en base de datos
+            $this->pagoSocioModel->actualizarEvidencia($id, null);
+            
+            echo json_encode(['success' => true]);
+
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+        exit;
+    }
 }

@@ -65,43 +65,61 @@ $anioActual = date('Y');
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label small fw-bold">Utilidades Generadas</label>
-                            <input type="number" step="0.01" name="utilidades_generadas" class="form-control calc-field"
-                                value="0.00">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">$</span>
+                                <input type="text" id="mask_utilidades" class="form-control calc-mask" placeholder="0,00">
+                                <input type="hidden" name="utilidades_generadas" id="real_utilidades" class="calc-field" value="0.00">
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label small fw-bold">Saldo a favor anterior</label>
-                            <input type="number" step="0.01" name="saldo_favor_anterior" class="form-control calc-field"
-                                value="0.00">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">$</span>
+                                <input type="text" id="mask_saldo_favor" class="form-control calc-mask" placeholder="0,00">
+                                <input type="hidden" name="saldo_favor_anterior" id="real_saldo_favor" class="calc-field" value="0.00">
+                            </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label small fw-bold">Rendimiento Mensual (%)</label>
-                            <input type="number" step="0.01" name="rendimiento_mensual_porc" class="form-control"
-                                value="0.00">
+                            <input type="text" id="rendimiento_mensual_porc" name="rendimiento_mensual_porc" class="form-control"
+                                value="0" placeholder="Ej: 15">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label small fw-bold">Deducciones</label>
-                            <input type="number" step="0.01" name="deducciones" class="form-control calc-field"
-                                value="0.00">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">$</span>
+                                <input type="text" id="mask_deducciones" class="form-control calc-mask" placeholder="0,00">
+                                <input type="hidden" name="deducciones" id="real_deducciones" class="calc-field" value="0.00">
+                            </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label small fw-bold">Impuestos</label>
-                            <input type="number" step="0.01" name="impuestos" class="form-control calc-field"
-                                value="0.00">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">$</span>
+                                <input type="text" id="mask_impuestos" class="form-control calc-mask" placeholder="0,00">
+                                <input type="hidden" name="impuestos" id="real_impuestos" class="calc-field" value="0.00">
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label small fw-bold">Ajustes</label>
-                            <input type="number" step="0.01" name="ajustes" class="form-control calc-field"
-                                value="0.00">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">$</span>
+                                <input type="text" id="mask_ajustes" class="form-control calc-mask" placeholder="0,00">
+                                <input type="hidden" name="ajustes" id="real_ajustes" class="calc-field" value="0.00">
+                            </div>
                         </div>
                     </div>
                     <div class="mb-0">
                         <label class="form-label fw-bold text-primary">Saldo Final del Mes</label>
-                        <input type="number" step="0.01" name="saldo_final_mes" id="saldo_final_mes"
-                            class="form-control fw-bold bg-light" value="0.00" readonly>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-dark fw-bold">$</span>
+                            <input type="text" id="mask_saldo_final" class="form-control fw-bold bg-light" value="0,00" readonly>
+                            <input type="hidden" name="saldo_final_mes" id="real_saldo_final" value="0.00">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -173,8 +191,11 @@ $anioActual = date('Y');
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label fw-bold text-success">Valor Pagado</label>
-                            <input type="number" step="0.01" name="valor_pagado" id="valor_pagado"
-                                class="form-control fw-bold" required>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="text" id="mask_valor_pagado" class="form-control fw-bold calc-mask" placeholder="0,00" required>
+                                <input type="hidden" name="valor_pagado" id="real_valor_pagado" class="calc-field" value="0.00">
+                            </div>
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label fw-bold">Responsable</label>
@@ -203,20 +224,55 @@ $anioActual = date('Y');
     const form = document.getElementById('formRendimiento');
     const itemsJsonInput = document.getElementById('items_json');
 
-    function actualizarSaldos() {
-        const utilidades = parseFloat(document.getElementsByName('utilidades_generadas')[0].value) || 0;
-        const saldoFavor = parseFloat(document.getElementsByName('saldo_favor_anterior')[0].value) || 0;
-        const deducciones = parseFloat(document.getElementsByName('deducciones')[0].value) || 0;
-        const impuestos = parseFloat(document.getElementsByName('impuestos')[0].value) || 0;
-        const ajustes = parseFloat(document.getElementsByName('ajustes')[0].value) || 0;
-
-        const saldoFinal = (utilidades + saldoFavor) - (deducciones + impuestos + ajustes);
-        document.getElementById('saldo_final_mes').value = saldoFinal.toFixed(2);
-        document.getElementById('valor_pagado').value = saldoFinal.toFixed(2);
+    // --- FUNCIÓN PARA FORMATEAR MONEDA ---
+    function formatCurrency(valor) {
+        let cleanValue = valor.toString().replace(/[^\d]/g, '');
+        if (!cleanValue) return { display: '0,00', real: 0 };
+        let numero = (parseInt(cleanValue, 10) / 100).toFixed(2);
+        let display = numero.replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return { display: display, real: parseFloat(numero) };
     }
 
-    document.querySelectorAll('.calc-field').forEach(input => {
-        input.addEventListener('input', actualizarSaldos);
+    // --- FUNCIÓN PARA APLICAR MÁSCARA DESDE VALOR NUMÉRICO ---
+    function setCurrencyMask(realInputId, maskInputId, value) {
+        let numero = parseFloat(value || 0).toFixed(2);
+        let display = numero.replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        document.getElementById(realInputId).value = numero;
+        document.getElementById(maskInputId).value = display;
+    }
+
+    function actualizarSaldos() {
+        const utilidades = parseFloat(document.getElementById('real_utilidades').value) || 0;
+        const saldoFavor = parseFloat(document.getElementById('real_saldo_favor').value) || 0;
+        const deducciones = parseFloat(document.getElementById('real_deducciones').value) || 0;
+        const impuestos = parseFloat(document.getElementById('real_impuestos').value) || 0;
+        const ajustes = parseFloat(document.getElementById('real_ajustes').value) || 0;
+
+        const saldoFinal = (utilidades + saldoFavor) - (deducciones + impuestos + ajustes);
+        
+        setCurrencyMask('real_saldo_final', 'mask_saldo_final', saldoFinal);
+        setCurrencyMask('real_valor_pagado', 'mask_valor_pagado', saldoFinal);
+    }
+
+    // --- EVENTOS PARA MÁSCARAS ---
+    document.querySelectorAll('.calc-mask').forEach(maskInput => {
+        maskInput.addEventListener('input', function() {
+            let info = formatCurrency(this.value);
+            this.value = info.display;
+            
+            // Buscar el input real asociado (están en el mismo grupo)
+            let realInput = this.parentElement.querySelector('input[type="hidden"]');
+            if (realInput) {
+                realInput.value = info.real;
+                actualizarSaldos();
+            }
+        });
+    });
+
+    // --- RESTRICCIÓN DE ENTEROS PARA RENDIMIENTO MENSUAL (%) ---
+    const inputRendimiento = document.getElementById('rendimiento_mensual_porc');
+    inputRendimiento.addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
     });
 
     document.getElementById('btnCalcularRendimientos').onclick = function () {
@@ -291,11 +347,8 @@ $anioActual = date('Y');
                     document.getElementById('grandTotal').innerText = `$ ${sumTotal.toLocaleString()}`;
 
                     // Auto-fill form fields
-                    document.getElementsByName('utilidades_generadas')[0].value = sumRendimiento.toFixed(2);
-                    document.getElementsByName('ajustes')[0].value = (sumCap * -1).toFixed(2); // Devolución de capital como ajuste negativo? O mejor sumarlo.
-                    // Ajuste: si el capital se devuelve, aumenta el pago. 
-                    // Según fórmula (utilidades + saldoFavor) - (deducciones + impuestos + ajustes)
-                    // Si pongo ajustes negativo, se suma.
+                    setCurrencyMask('real_utilidades', 'mask_utilidades', sumRendimiento);
+                    setCurrencyMask('real_ajustes', 'mask_ajustes', sumCap * -1); 
 
                     actualizarSaldos();
                     itemsJsonInput.value = JSON.stringify(data.items);

@@ -2,3 +2,6 @@ vendor/
 logs/
 .env
 uploads/
+credentials*.json
+*.log
+.DS_Store

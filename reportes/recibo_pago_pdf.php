@@ -33,7 +33,7 @@ class ReciboPDF extends TCPDF
         $this->Cell(0, 5, 'COMPROBANTE DE PAGO', 0, 1, 'L');
         $this->SetX(40);
         $this->SetFont('helvetica', '', 9);
-        $this->Cell(0, 5, 'RUC/NIT: 900.123.456-7', 0, 1, 'L');
+        //$this->Cell(0, 5, 'RUC/NIT: 900.123.456-7', 0, 1, 'L');
     }
     public function Footer()
     {
@@ -114,9 +114,32 @@ $html .= '
     <b>Método de Pago:</b> ' . ucfirst($pago['metodo_pago']) . '<br>
     <b>Referencia:</b> ' . ($pago['referencia'] ?? '---') . '
 </div>
+<br><br>
+<table border="0" cellpadding="0">
+    <tr>
+        <td width="60%"></td>
+        <td width="40%" align="center">
+            <br><br><br>
+            __________________________<br>
+            <b>Responsable</b><br>
+            RAUL FELIPE VEGA
+        </td>
+    </tr>
+</table>
 ';
 
 $pdf->writeHTML($html, true, false, true, false, '');
+
+// Agregar la firma con el método Image (más fiable)
+$firma = __DIR__ . '/../assets/firma_raul.png';
+if (file_exists($firma)) {
+    // Al ser alineado a la derecha, calculamos la posición
+    $currentY = $pdf->GetY();
+    // En media carta landscape (216mm ancho), la sección responsable está a la derecha.
+    // X=148 centra la imagen sobre la línea en la celda del 40% derecho.
+    // Movido un poco más arriba (-36)
+    $pdf->Image($firma, 148, $currentY - 36, 35);
+}
 
 // SALIDA
 if (isset($returnPDF) && $returnPDF) {

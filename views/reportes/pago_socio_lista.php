@@ -61,12 +61,55 @@
                                     <button onclick="enviarEmail(<?= $p['id'] ?>)" class="btn btn-sm btn-outline-primary ms-1">
                                         <i class="bi bi-envelope"></i> Email
                                     </button>
+                                    
+                                    <?php if (!empty($p['evidencia_pago'])): ?>
+                                        <a href="https://drive.google.com/file/d/<?= $p['evidencia_pago'] ?>/view?usp=sharing" 
+                                           target="_blank" class="btn btn-sm btn-success ms-1" title="Ver Evidencia">
+                                            <i class="bi bi-google"></i>
+                                        </a>
+                                        <?php if (($_SESSION['usuario']['rol'] ?? '') !== 'socio'): ?>
+                                            <button onclick="eliminarEvidencia(<?= $p['id'] ?>)" class="btn btn-sm btn-danger ms-1" title="Eliminar Evidencia">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    <?php elseif (($_SESSION['usuario']['rol'] ?? '') !== 'socio'): ?>
+                                        <button onclick="prepararSubida(<?= $p['id'] ?>, '<?= $p['consecutivo'] ?>')" 
+                                                class="btn btn-sm btn-warning ms-1" title="Adjuntar Evidencia">
+                                            <i class="bi bi-paperclip"></i>
+                                        </button>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para subir evidencia -->
+<div class="modal fade" id="modalEvidencia" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adjuntar Evidencia de Pago</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formEvidencia">
+                <div class="modal-body">
+                    <p id="txtPagoAfecado" class="fw-bold"></p>
+                    <input type="hidden" name="pago_socio_id" id="pago_socio_id_input">
+                    <div class="mb-3">
+                        <label class="form-label">Seleccionar archivo (PDF o Imagen)</label>
+                        <input type="file" name="evidencia" class="form-control" required accept="image/*,.pdf">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnGuardarEvidencia">Subir a Drive</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -80,6 +123,49 @@
 <?php endif; ?>
 
 <script>
+    let modalEvidenciaInstance = null;
+
+    function prepararSubida(id, consecutivo) {
+        if (!modalEvidenciaInstance) {
+            modalEvidenciaInstance = new bootstrap.Modal(document.getElementById('modalEvidencia'));
+        }
+        document.getElementById('pago_socio_id_input').value = id;
+        document.getElementById('txtPagoAfecado').innerText = "Recibo: " + consecutivo;
+        modalEvidenciaInstance.show();
+    }
+
+    document.getElementById('formEvidencia').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const btn = document.getElementById('btnGuardarEvidencia');
+        btn.disabled = true;
+        btn.innerText = "Subiendo...";
+
+        const formData = new FormData(this);
+
+        fetch('dashboard.php?modulo=reportes&action=subir_evidencia_pago', {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire('¡Éxito!', 'La evidencia ha sido cargada correctamente.', 'success').then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire('Error', data.error || 'No se pudo subir la evidencia.', 'error');
+                btn.disabled = false;
+                btn.innerText = "Subir a Drive";
+            }
+        })
+        .catch(err => {
+            Swal.fire('Error', 'Error de conexión.', 'error');
+            btn.disabled = false;
+            btn.innerText = "Subir a Drive";
+        });
+    });
+
     function enviarEmail(id) {
         Swal.fire({
             title: '¿Enviar por correo?',
@@ -105,6 +191,44 @@
                             Swal.fire('¡Enviado!', 'El correo ha sido enviado exitosamente al socio.', 'success');
                         } else {
                             Swal.fire('Error', data.error || 'No se pudo enviar el correo.', 'error');
+                        }
+                    })
+                    .catch(err => {
+                        Swal.fire('Error', 'Ocurrió un error en la conexión.', 'error');
+                    });
+            }
+        });
+    }
+
+    function eliminarEvidencia(id) {
+        Swal.fire({
+            title: '¿Eliminar evidencia?',
+            text: "El archivo se borrará permanentemente de Google Drive.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Eliminando...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                fetch(`dashboard.php?modulo=reportes&action=eliminar_evidencia_pago&id=${id}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('¡Eliminado!', 'La evidencia ha sido borrada.', 'success').then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', data.error || 'No se pudo eliminar la evidencia.', 'error');
                         }
                     })
                     .catch(err => {

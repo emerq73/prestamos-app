@@ -95,9 +95,10 @@
 
 <!-- Confirmar eliminación -->
 <script>
-    document.querySelectorAll('.btn-eliminar').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const id = this.dataset.id;
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-eliminar');
+        if (btn) {
+            const id = btn.dataset.id;
             Swal.fire({
                 title: '¿Eliminar acreedor?',
                 text: 'Esta acción no se puede deshacer',
@@ -105,12 +106,13 @@
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Sí, eliminar'
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
             }).then(result => {
                 if (result.isConfirmed) {
                     window.location.href = "dashboard.php?modulo=deudores&action=eliminar&id=" + id;
                 }
             });
-        });
+        }
     });
 </script>

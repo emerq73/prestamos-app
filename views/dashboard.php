@@ -74,6 +74,22 @@ if ($modulo === 'reportes') {
 ob_start();
 
 if ($modulo === 'inicio') {
+    require_once __DIR__ . '/../models/Dashboard.php';
+    $dashboardModel = new Dashboard();
+    $metrics = $dashboardModel->getMetrics();
+
+    // Filtros para el reporte de rendimientos
+    $meses_arr = [
+        '1' => 'enero', '2' => 'febrero', '3' => 'marzo', '4' => 'abril',
+        '5' => 'mayo', '6' => 'junio', '7' => 'julio', '8' => 'agosto',
+        '9' => 'septiembre', '10' => 'octubre', '11' => 'noviembre', '12' => 'diciembre'
+    ];
+    
+    $filtro_mes = $_GET['filtro_mes'] ?? $meses_arr[date('n')];
+    $filtro_anio = $_GET['filtro_anio'] ?? date('Y');
+    
+    $rendimientos = $dashboardModel->getYieldsReport($filtro_mes, $filtro_anio);
+
     include __DIR__ . '/inicio.php';
 } elseif ($modulo === 'auth' && $action === 'logout') {
     require_once $controllerFile;

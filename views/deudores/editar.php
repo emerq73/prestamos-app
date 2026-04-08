@@ -16,6 +16,20 @@ $deudor = $deudorModel->obtenerPorId($id);
 $documentos = $docModel->obtenerPorDeudor($id);
 ?>
 
+<?php if (isset($_GET['exito']) && $_GET['exito'] === 'doc_eliminado'): ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                icon: 'success',
+                title: '¡Eliminado!',
+                text: 'El documento ha sido borrado correctamente.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        });
+    </script>
+<?php endif; ?>
+
 <div class="card shadow">
     <div class="card-header bg-warning text-dark">
         <i class="bi bi-pencil-square me-2"></i> Editar acreedor
@@ -69,12 +83,30 @@ $documentos = $docModel->obtenerPorDeudor($id);
                     <?php if (count($documentos) == 0): ?>
                         <div class="alert alert-warning">No hay documentos cargados.</div>
                     <?php else: ?>
+                        <?php 
+                        require_once __DIR__ . '/../../includes/GoogleDrive.php';
+                        $driveHelper = null;
+                        try {
+                            $driveHelper = new GoogleDrive();
+                        } catch (Exception $e) {
+                            // Ignorar error si no hay credenciales todavía
+                        }
+                        ?>
                         <ul class="list-group mb-3">
                             <?php foreach ($documentos as $doc): ?>
+                                <?php 
+                                $esDrive = ($doc['tipo'] === 'documento_drive');
+                                $urlVisualizacion = $esDrive && $driveHelper 
+                                    ? $driveHelper->obtenerEnlaceVisualizacion($doc['archivo']) 
+                                    : $baseURL . '/' . $doc['archivo'];
+                                ?>
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span><?= basename($doc['archivo']) ?></span>
+                                    <span>
+                                        <?= $esDrive ? '<i class="bi bi-google me-1"></i>' : '<i class="bi bi-file-earmark-pdf me-1"></i>' ?>
+                                        <?= basename($doc['archivo']) ?>
+                                    </span>
                                     <div class="btn-group">
-                                        <a href="<?= $baseURL . '/' . $doc['archivo'] ?>" target="_blank"
+                                        <a href="<?= $urlVisualizacion ?>" target="_blank"
                                             class="btn btn-sm btn-primary">
                                             Ver/Descargar
                                         </a>
@@ -148,12 +180,13 @@ $documentos = $docModel->obtenerPorDeudor($id);
         input.addEventListener('change', checkChanges);
     });
 
-    // Lógica para eliminar documentos
-    document.querySelectorAll('.btn-eliminar-doc').forEach(btn => {
-        btn.addEventListener('click', function (e) {
+    // Lógica para eliminar documentos (Delegación de eventos)
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-eliminar-doc');
+        if (btn) {
             e.preventDefault();
-            const idDoc = this.dataset.doc;
-            const idDeudor = this.dataset.deudor;
+            const idDoc = btn.dataset.doc;
+            const idDeudor = btn.dataset.deudor;
 
             Swal.fire({
                 title: '¿Eliminar documento?',
@@ -169,6 +202,6 @@ $documentos = $docModel->obtenerPorDeudor($id);
                     window.location.href = `${baseURL}/controllers/DocumentoDeudorController.php?eliminar=${idDoc}&deudor=${idDeudor}`;
                 }
             });
-        });
+        }
     });
 </script>

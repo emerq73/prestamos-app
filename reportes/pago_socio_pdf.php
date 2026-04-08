@@ -170,16 +170,26 @@ $tbl = '
     <br><br>
     <tr>
         <td width="50%">
-            <br><br>
+            <br><br><br><br>
             __________________________<br>
             <b>Nombre del responsable:</b><br>
-            ' . htmlspecialchars($pago['responsable'] ?? 'Felipe Vega') . '
+            RAUL FELIPE VEGA
         </td>
     </tr>
 </table>
 ';
 
 $pdf->writeHTML($tbl, true, false, false, false, '');
+
+// Agregar la firma con el método Image (más fiable)
+$firma = __DIR__ . '/../assets/firma_raul.png';
+if (file_exists($firma)) {
+    // Obtener la posición actual para poner la firma encima de la línea
+    $currentY = $pdf->GetY();
+    // Ajustado para centrar mejor sobre la línea (X=25 aprox para una celda de 50%)
+    // Movido un poco más arriba (-42)
+    $pdf->Image($firma, 25, $currentY - 42, 35);
+}
 
 if (isset($returnPDF) && $returnPDF) {
     $pdfContent = $pdf->Output('Informe_Rendimientos_' . $pago['consecutivo'] . '.pdf', 'S');

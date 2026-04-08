@@ -119,6 +119,23 @@ WHERE p.id = ?;
         // --------------------------
         for ($n = 1; $n <= $plazo; $n++) {
 
+            // avanzar fecha según periodo antes de asignar a la cuota
+            // La primera cuota debe ser un período DESPUÉS del desembolso
+            switch ($periodo) {
+                case 'diario':
+                    $fecha->modify('+1 day');
+                    break;
+                case 'semanal':
+                    $fecha->modify('+7 days');
+                    break;
+                case 'quincenal':
+                    $fecha->modify('+15 days');
+                    break;
+                default:
+                    $fecha->modify('+1 month');
+                    break;
+            }
+
             // última cuota ajusta capital para evitar errores centavos
             if ($n == $plazo) {
                 $capital = $saldo;
@@ -144,22 +161,6 @@ WHERE p.id = ?;
             ];
 
             $saldo = $saldo_restante;
-
-            // avanzar fecha según periodo
-            switch ($periodo) {
-                case 'diario':
-                    $fecha->modify('+1 day');
-                    break;
-                case 'semanal':
-                    $fecha->modify('+7 days');
-                    break;
-                case 'quincenal':
-                    $fecha->modify('+15 days');
-                    break;
-                default:
-                    $fecha->modify('+1 month');
-                    break;
-            }
         }
 
         // --------------------------

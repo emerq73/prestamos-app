@@ -248,4 +248,11 @@ class PagoSocio
         $stmt->execute([$socio_id, $mes, $anio]);
         return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
     }
+
+    public function actualizarEvidencia($id, $fileId)
+    {
+        $sql = "UPDATE pago_socios SET evidencia_pago = ? WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$fileId, $id]);
+    }
 }

@@ -21,25 +21,41 @@ class DeudorController
         require_once __DIR__ . '/../views/deudores/index.php';
     }
 
-    private function subirDocumentos($deudorID, $files)
+    private function subirDocumentos($deudorID, $identificacion, $files)
     {
-        $dir = __DIR__ . "/../uploads/deudores/";
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
-
-        foreach ($files['name'] as $key => $name) {
-            if ($files['error'][$key] === UPLOAD_ERR_OK) {
-                $tmp = $files['tmp_name'][$key];
-                $nuevoNombre = $deudorID . "-" . date('Y-m-d') . "-" . basename($name);
-                if (move_uploaded_file($tmp, $dir . $nuevoNombre)) {
-                    $this->docModel->crear([
-                        'deudor_id' => $deudorID,
-                        'tipo' => 'documento',
-                        'archivo' => 'uploads/deudores/' . $nuevoNombre
-                    ]);
+        require_once __DIR__ . '/../includes/GoogleDrive.php';
+        try {
+            $drive = new GoogleDrive();
+            
+            foreach ($files['name'] as $key => $name) {
+                if ($files['error'][$key] === UPLOAD_ERR_OK) {
+                    $tmp = $files['tmp_name'][$key];
+                    $prefix = !empty($identificacion) ? $identificacion : $deudorID;
+                    $nuevoNombre = $prefix . "-" . date('Y-m-d') . "-" . basename($name);
+                    
+                    error_log("Subiendo archivo: $name as $nuevoNombre para deudor $deudorID");
+                    
+                    // Subir a Google Drive
+                    $fileId = $drive->subirArchivo($tmp, $nuevoNombre);
+                    
+                    if ($fileId) {
+                        error_log("Archivo subido a Drive con ID: $fileId");
+                        $res = $this->docModel->crear([
+                            'deudor_id' => $deudorID,
+                            'tipo' => 'documento_drive',
+                            'archivo' => $fileId
+                        ]);
+                        error_log("Resultado inserción BD: " . ($res ? 'éxito' : 'fallo'));
+                    } else {
+                        error_log("Fallo al obtener fileId de Drive");
+                    }
+                } else {
+                    error_log("Error de upload PHP para $name: " . $files['error'][$key]);
                 }
             }
+        } catch (Exception $e) {
+            error_log("Error subiendo a Google Drive: " . $e->getMessage());
+            error_log($e->getTraceAsString());
         }
     }
 
@@ -51,7 +67,7 @@ class DeudorController
             }
             $id = $this->deudorModel->crear($_POST);
             if (!empty($_FILES['documentos']['name'][0])) {
-                $this->subirDocumentos($id, $_FILES['documentos']);
+                $this->subirDocumentos($id, $_POST['documento'] ?? '', $_FILES['documentos']);
             }
             header("Location: dashboard.php?modulo=deudores&exito=creado");
             exit;
@@ -66,7 +82,7 @@ class DeudorController
             }
             $this->deudorModel->actualizar($_POST['id'], $_POST);
             if (!empty($_FILES['documentos']['name'][0])) {
-                $this->subirDocumentos($_POST['id'], $_FILES['documentos']);
+                $this->subirDocumentos($_POST['id'], $_POST['documento'] ?? '', $_FILES['documentos']);
             }
             header("Location: dashboard.php?modulo=deudores&exito=editado");
             exit;
